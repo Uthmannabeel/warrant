@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Warrant — an agent that earns the right to act</title>
+<meta name="description" content="An autonomous remediation agent that earns the right to act — Splunk Agentic Ops Hackathon."/>
+<style>
+  :root{
+    --bg:#0b1020; --panel:#121a30; --panel2:#0e1528; --ink:#e8edf7; --muted:#8da2c0;
+    --line:#22304f; --green:#22c98a; --red:#ff5c72; --amber:#ffc04d; --blue:#5aa9ff;
+    --purple:#b388ff; --teal:#36d2c4; --cyan:#46c6ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 600px at 70% -10%,#16203c 0,var(--bg) 60%);
+       color:var(--ink);font:14px/1.5 ui-sans-serif,system-ui,Segoe UI,Roboto,Arial;min-height:100vh}
+  a{color:var(--blue);text-decoration:none} a:hover{text-decoration:underline}
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;
+         padding:18px 26px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .brand h1{margin:0;font-size:19px;letter-spacing:.2px}
+  .brand p{margin:2px 0 0;color:var(--muted);font-size:13px}
+  .right{display:flex;align-items:center;gap:14px}
+  .ghlink{color:var(--muted);font-size:13px}
+  button{background:linear-gradient(180deg,#2b6fff,#1f5be0);color:#fff;border:0;border-radius:10px;
+         padding:11px 18px;font-weight:600;cursor:pointer;box-shadow:0 6px 18px rgba(43,111,255,.35)}
+  button:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+  .wrap{display:grid;grid-template-columns:1.4fr .9fr;gap:18px;padding:18px 26px;max-width:1200px;margin:0 auto}
+  @media(max-width:880px){.wrap{grid-template-columns:1fr}}
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);
+        border-radius:14px;padding:16px 18px}
+  .card h2{margin:0 0 12px;font-size:12px;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted)}
+  #log{height:540px;overflow:auto;font-family:ui-monospace,Consolas,monospace;font-size:12.5px}
+  .ln{padding:2px 6px;border-radius:6px;white-space:pre-wrap;word-break:break-word}
+  .tag{display:inline-block;min-width:96px;color:var(--muted)}
+  .round-sep{margin:12px 0 6px;color:#fff;font-weight:700;border-top:1px dashed var(--line);padding-top:10px}
+  .t-BRAIN .tag{color:var(--purple)} .t-PREDICT .tag{color:var(--blue)}
+  .t-CONTEXT .tag{color:var(--teal)} .t-TRUST .tag{color:var(--amber)}
+  .t-APPROVAL .tag{color:var(--amber)} .t-ACT .tag{color:var(--cyan)}
+  .t-LEDGER .tag{color:var(--amber)} .t-BASELINE .tag{color:var(--muted)}
+  .ok{color:var(--green)} .bad{color:var(--red)} .warn{color:var(--amber)}
+  .trust-val{font-size:42px;font-weight:800;letter-spacing:.5px}
+  .bar{height:12px;background:#0a1226;border:1px solid var(--line);border-radius:99px;overflow:hidden;margin:10px 0}
+  .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2b6fff,#36d2c4);transition:width .4s}
+  .badge{display:inline-block;padding:5px 11px;border-radius:99px;font-weight:700;font-size:12px}
+  .badge.auto{background:rgba(34,201,138,.16);color:var(--green);border:1px solid rgba(34,201,138,.4)}
+  .badge.human{background:rgba(255,192,77,.14);color:var(--amber);border:1px solid rgba(255,192,77,.4)}
+  .sub{color:var(--muted);font-size:12px}
+  canvas{width:100%;height:230px;display:block}
+  .legend{display:flex;gap:16px;color:var(--muted);font-size:12px;margin-top:8px;flex-wrap:wrap}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:99px;margin-right:5px;vertical-align:middle}
+  .foot{padding:6px 26px 26px;color:var(--muted);font-size:12px;max-width:1200px;margin:0 auto}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1>WARRANT <span class="sub">— an agent that earns the right to act</span></h1>
+    <p>Falsifiable predictions · earned autonomy · trustworthy when it's wrong · Splunk Agentic Ops</p>
+  </div>
+  <div class="right">
+    <a class="ghlink" href="https://github.com/Uthmannabeel/warrant" target="_blank" rel="noopener">⌥ Source on GitHub</a>
+    <button id="run">▶ Run incidents</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <h2>Agent activity</h2>
+    <div id="log"></div>
+  </div>
+  <div>
+    <div class="card" style="margin-bottom:18px">
+      <h2>Trust — restart_connection_pool</h2>
+      <div><span id="trustVal" class="trust-val">—</span> <span class="sub">confidence</span></div>
+      <div class="bar"><i id="trustBar"></i></div>
+      <div><span id="trustBadge" class="badge human">awaiting run</span>
+           <span id="trustMeta" class="sub"></span></div>
+    </div>
+    <div class="card">
+      <h2>Error rate vs. learned control limit</h2>
+      <canvas id="chart" width="640" height="230"></canvas>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--red)"></i>before fix</span>
+        <span><i class="dot" style="background:var(--green)"></i>after (in band)</span>
+        <span><i class="dot" style="background:var(--red)"></i>after (out of band)</span>
+        <span><i class="dot" style="background:var(--amber)"></i>control limit</span>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="foot">
+  Every agent is impressive when it's right. Warrant is trustworthy when it's <b>wrong</b>.
+  &nbsp;·&nbsp; This page replays a representative run of the live agent (which drives Splunk MCP + Gemini).
+  Run it yourself from the <a href="https://github.com/Uthmannabeel/warrant" target="_blank" rel="noopener">source</a>.
+</div>
+
+<script>
+const logEl = document.getElementById('log');
+const btn = document.getElementById('run');
+const metrics = [];
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+function tagOf(msg){ const m = msg.match(/^\[([A-Z]+)\]/); return m ? m[1] : ''; }
+function esc(s){ return s.replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+function addLine(msg){
+  const tag = tagOf(msg);
+  const div = document.createElement('div');
+  div.className = 'ln t-' + tag;
+  let rest = msg.replace(/^\[[A-Z]+\]\s*/,'');
+  let cls = '';
+  if(/INSIDE|RESOLVED|recovered|HIT/.test(msg)) cls='ok';
+  if(/OUTSIDE|WRONG|MISS|still degraded/.test(msg)) cls='bad';
+  if(/AUTONOMOUS/.test(msg)) cls='ok';
+  if(/HUMAN-IN-THE-LOOP|approval/.test(msg)) cls='warn';
+  div.innerHTML = '<span class="tag">'+tag+'</span><span class="'+cls+'">'+esc(rest)+'</span>';
+  logEl.appendChild(div); logEl.scrollTop = logEl.scrollHeight;
+}
+function roundSep(n,total,scenario){
+  const div=document.createElement('div'); div.className='round-sep';
+  div.textContent = 'Round '+n+'/'+total+' — '+(scenario==='leak'?'CONNECTION LEAK':'DECOY (obvious fix is wrong)');
+  logEl.appendChild(div); logEl.scrollTop=logEl.scrollHeight;
+}
+function updateTrust(d){
+  const pct = Math.round((d.conf||0)*100);
+  document.getElementById('trustVal').textContent = pct+'%';
+  document.getElementById('trustBar').style.width = Math.min(100,pct)+'%';
+  const badge=document.getElementById('trustBadge');
+  badge.textContent = d.autonomous ? 'AUTONOMOUS' : 'HUMAN-IN-THE-LOOP';
+  badge.className = 'badge ' + (d.autonomous?'auto':'human');
+  document.getElementById('trustMeta').textContent =
+     ' · ' + Math.round((d.rate||0)*100) + '% over ' + d.n + ' run(s)';
+}
+function drawChart(){
+  const c=document.getElementById('chart'), x=c.getContext('2d');
+  const W=c.width,H=c.height,padL=40,padB=24,padT=12;
+  x.clearRect(0,0,W,H);
+  if(!metrics.length) return;
+  let maxV=0; metrics.forEach(m=>{maxV=Math.max(maxV,m.before,m.after,m.limit)});
+  maxV=maxV*1.15||0.1;
+  const plotH=H-padB-padT, plotW=W-padL-8;
+  const y=v=>padT+plotH-(v/maxV)*plotH;
+  x.strokeStyle='#22304f'; x.lineWidth=1;
+  x.beginPath(); x.moveTo(padL,padT); x.lineTo(padL,padT+plotH); x.lineTo(W-4,padT+plotH); x.stroke();
+  const n=metrics.length, slot=plotW/n;
+  metrics.forEach((m,i)=>{
+    const cx=padL+slot*i+slot/2, bw=Math.min(26,slot*0.3);
+    x.fillStyle='rgba(255,92,114,.85)';
+    x.fillRect(cx-bw-2, y(m.before), bw, padT+plotH-y(m.before));
+    x.fillStyle = m.correct ? 'rgba(34,201,138,.9)' : 'rgba(255,92,114,.9)';
+    x.fillRect(cx+2, y(m.after), bw, padT+plotH-y(m.after));
+    x.fillStyle='#8da2c0'; x.font='11px system-ui'; x.textAlign='center';
+    x.fillText('R'+m.round, cx, H-8);
+  });
+  const lim=metrics[metrics.length-1].limit;
+  x.strokeStyle='#ffc04d'; x.setLineDash([5,4]); x.beginPath();
+  x.moveTo(padL,y(lim)); x.lineTo(W-4,y(lim)); x.stroke(); x.setLineDash([]);
+  x.fillStyle='#ffc04d'; x.textAlign='left'; x.font='10px system-ui';
+  x.fillText('control limit', padL+4, y(lim)-4);
+}
+function delayFor(d){
+  if(d.type==='round') return 500;
+  if(d.type==='metric'||d.type==='ledger') return 140;
+  if(d.type==='log'){
+    const m=d.msg;
+    if(/VERIFY/.test(m)) return 850;
+    if(/DECIDE|RECOVER/.test(m)) return 750;
+    if(/\[ACT\]/.test(m)) return 420;
+    if(/PREDICT|BRAIN/.test(m)) return 360;
+    return 140;
+  }
+  return 100;
+}
+async function run(){
+  btn.disabled=true; logEl.innerHTML=''; metrics.length=0; drawChart();
+  let events;
+  try { events = await fetch('events.json',{cache:'no-store'}).then(r=>r.json()); }
+  catch(e){ addLine('[ERROR] could not load events.json'); btn.disabled=false; return; }
+  for(const d of events){
+    if(d.type==='round') roundSep(d.n,d.total,d.scenario);
+    else if(d.type==='log') addLine(d.msg);
+    else if(d.type==='metric'){ metrics.push(d); drawChart(); }
+    else if(d.type==='ledger') updateTrust(d);
+    else if(d.type==='done') break;
+    await sleep(delayFor(d));
+  }
+  btn.disabled=false;
+}
+btn.onclick=run;
+</script>
+</body>
+</html>
