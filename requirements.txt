@@ -1,0 +1,18 @@
+# Warrant — Python dependencies (Python 3.11+)
+
+# Sandbox "flight simulator" microservice
+fastapi==0.115.0
+uvicorn[standard]==0.49.0
+
+# Splunk connectivity
+mcp==1.27.2                # Model Context Protocol client (streamable-HTTP transport)
+httpx==0.27.2              # HTTP client (Splunk HEC ingest + REST fallback)
+truststore==0.10.0         # Use the OS (Windows) cert store — needed behind corporate TLS proxies
+
+# Agent loop + config
+pydantic==2.13.4
+python-dotenv==1.0.1
+
+# Forecasting fallback (used only if Cisco Deep Time Series is unavailable)
+statsmodels==0.14.2
+numpy==2.1.1
