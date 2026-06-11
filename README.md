@@ -12,6 +12,8 @@ with reality.
 > Built for the **Splunk Agentic Ops Hackathon** — theme: *reimagine the future of
 > agentic operations using Splunk AI.*
 
+**🌐 Live demo (replay of a real run): https://warrant-chi.vercel.app**
+
 ---
 
 ## The control loop

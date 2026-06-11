@@ -6,6 +6,11 @@ smart it sounds, but by whether its falsifiable predictions survive contact with
 **Track:** Observability
 **Tech:** Splunk MCP Server · Splunk AI Assistant (saia) tools · Google Gemini · Python/FastAPI
 
+**Links:**
+- 🌐 Live demo (replay of a real run): https://warrant-chi.vercel.app
+- 💻 Source code: https://github.com/Uthmannabeel/warrant
+- 🎬 Demo video: *(add YouTube/Vimeo link here before submitting)*
+
 ---
 
 ## Inspiration

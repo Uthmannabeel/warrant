@@ -17,3 +17,6 @@ ledger.json
 .idea/
 .DS_Store
 Thumbs.db
+
+# Server output logs
+*.out
