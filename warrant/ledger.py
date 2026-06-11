@@ -13,7 +13,7 @@ from pathlib import Path
 
 from .config import config
 
-LEDGER_PATH = Path("ledger.json")
+LEDGER_PATH = Path(config.ledger_path)
 
 
 def wilson_lower_bound(successes: int, n: int, z: float = 1.96) -> float:
@@ -39,6 +39,9 @@ class Outcome:
     predicted: str             # the falsifiable prediction, human-readable
     correct: bool              # did reality stay inside the forecast band?
     timestamp: str             # ISO-8601, stamped by the caller (no clock in this module)
+    confidence: float = 0.5    # the agent's STATED confidence (0..1) in this prediction -> calibration
+    kind: str = "production"   # "exam" (proving ground) or "production" (live system)
+    fingerprint: str = ""      # brain fingerprint at decision time -> drift detection
     note: str = ""
 
 
@@ -61,6 +64,26 @@ class Ledger:
     def record(self, outcome: Outcome) -> None:
         self._records.append(outcome)
         self._save()
+
+    def records(self, action_class: str | None = None) -> list[Outcome]:
+        """All recorded outcomes, optionally filtered to one action class (chronological)."""
+        if action_class is None:
+            return list(self._records)
+        return [r for r in self._records if r.action_class == action_class]
+
+    def action_classes(self) -> list[str]:
+        """Every action class that has at least one recorded outcome (stable order)."""
+        seen: list[str] = []
+        for r in self._records:
+            if r.action_class not in seen:
+                seen.append(r.action_class)
+        return seen
+
+    def reset(self) -> None:
+        """Wipe the track record — used for a clean demo run, not in real operation."""
+        self._records = []
+        if self.path.exists():
+            self.path.unlink()
 
     def _counts(self, action_class: str) -> tuple[int, int]:
         relevant = [r for r in self._records if r.action_class == action_class]

@@ -45,6 +45,7 @@ HORIZON_SECONDS = 4            # how long after acting we hold the system to its
 ACTIONS = {
     "restart_connection_pool": ("/control/restart", True),
     "rollback_deploy": ("/control/rollback", True),
+    "clear_cache": ("/control/clear_cache", True),
 }
 
 
@@ -53,6 +54,31 @@ class Hypothesis:
     action_class: str
     target: str
     rationale: str
+    confidence: float = 0.7  # the agent's stated confidence the action will work -> calibration
+
+
+@dataclass
+class LoopParams:
+    """Timing/mode knobs. Defaults preserve the original live behaviour; the proving ground
+    passes a fast profile so an agent can sit dozens of exams in seconds."""
+    horizon_seconds: float = HORIZON_SECONDS
+    baseline_samples: int = 8
+    baseline_interval: float = 0.05
+    do_corrective: bool = True
+    kind: str = "production"        # "exam" when run by the proving ground
+    use_splunk_context: bool = True  # live loop pulls real Splunk context; exams skip it for speed
+    brain_timeout: float = 25.0     # per Gemini call; exams fail fast to the heuristic
+    brain_retries: int = 3
+
+
+@dataclass
+class Scenario:
+    """A parameterised incident the proving ground can manufacture at will."""
+    fault: str
+    severity: float = 1.0
+    noise: float = 0.03
+    correct_action: str = ""  # ground truth — the one control action that actually fixes it
+    label: str = ""
 
 
 @dataclass
@@ -135,28 +161,55 @@ async def splunk_context(symptom: str) -> str:
 
 # 3. HYPOTHESIZE -------------------------------------------------------------
 def hypothesize(metrics: dict) -> Hypothesis | None:
+    """Local heuristic diagnosis over three action classes.
+
+    It reads the dominant signal — connections vs. latency — and picks a remediation, stating a
+    calibrated confidence. It is deliberately fallible: a decoy (high connections AND elevated
+    latency) reads as a leak, so the heuristic confidently picks the pool restart and is wrong.
+    That is the point — the falsifiable prediction, not the diagnosis, is what keeps it honest.
+    """
     er = metrics["error_rate"]
     conns = metrics["db_connections"]
     lat = metrics["p95_latency_ms"]
     if er <= ERROR_RATE_BAND_UPPER:
         return None  # healthy — nothing to act on
+
     if conns > 150:
-        # Elevated connections + errors LOOK like a pool leak. This is the obvious call —
-        # correct for a real leak, and the trap the decoy scenario is built to expose.
+        # High connections dominate -> looks like a pool leak. If latency is ALSO elevated the
+        # picture is muddier (this is the decoy's trap), so the agent is less sure.
+        ambiguous = lat > 200
         return Hypothesis(
-            "restart_connection_pool",
-            "connection_pool",
-            f"error_rate={er:.3f} with db_connections={conns:.0f}: looks like a connection-"
-            f"pool leak; restarting the pool should clear it.",
+            "restart_connection_pool", "connection_pool",
+            f"error_rate={er:.3f}, db_connections={conns:.0f}"
+            + (f", p95={lat:.0f}ms (also elevated — could be a bad deploy masquerading as a leak)"
+               if ambiguous else "")
+            + ": connections dominate; restarting the pool should clear it.",
+            confidence=0.62 if ambiguous else 0.85,
+        )
+    if lat > 400:
+        # Latency dominates. Moderate connections -> cache stampede; normal connections -> bad deploy.
+        if conns > 90:
+            return Hypothesis(
+                "clear_cache", "cache",
+                f"error_rate={er:.3f}, p95={lat:.0f}ms with moderate db_connections={conns:.0f}: "
+                f"looks like a cache stampede; flushing the cache should clear it.",
+                confidence=0.78,
+            )
+        return Hypothesis(
+            "rollback_deploy", "last_deploy",
+            f"error_rate={er:.3f}, p95={lat:.0f}ms with normal db_connections={conns:.0f}: "
+            f"looks like a bad deploy; rolling back.",
+            confidence=0.85,
         )
     return Hypothesis(
-        "rollback_deploy",
-        "last_deploy",
-        f"error_rate={er:.3f} with p95_latency={lat:.0f}ms: looks like a bad deploy; rolling back.",
+        "rollback_deploy", "last_deploy",
+        f"error_rate={er:.3f} with no dominant resource signal: defaulting to a deploy rollback.",
+        confidence=0.55,
     )
 
 
-async def hypothesize_with_brain(metrics: dict, ctx: str, log) -> Hypothesis | None:
+async def hypothesize_with_brain(metrics: dict, ctx: str, log,
+                                 timeout: float = 25.0, retries: int = 3) -> Hypothesis | None:
     """Use Gemini when available; fall back to the local rule set for demo reliability."""
     if metrics["error_rate"] <= ERROR_RATE_BAND_UPPER:
         return None
@@ -166,7 +219,7 @@ async def hypothesize_with_brain(metrics: dict, ctx: str, log) -> Hypothesis | N
         return hypothesize(metrics)
 
     try:
-        decision = await brain.diagnose(metrics, ctx)
+        decision = await brain.diagnose(metrics, ctx, timeout=timeout, retries=retries)
     except Exception as exc:  # noqa: BLE001
         log(f"[BRAIN]      Gemini unavailable ({type(exc).__name__}) -> using local heuristic")
         return hypothesize(metrics)
@@ -175,12 +228,14 @@ async def hypothesize_with_brain(metrics: dict, ctx: str, log) -> Hypothesis | N
         log("[BRAIN]      Gemini returned no valid bounded action -> using local heuristic")
         return hypothesize(metrics)
 
-    log(f"[BRAIN]      Gemini selected {decision.action_class}")
-    return Hypothesis(decision.action_class, decision.target, decision.rationale)
+    log(f"[BRAIN]      Gemini selected {decision.action_class} (confidence {decision.confidence:.2f})")
+    return Hypothesis(decision.action_class, decision.target, decision.rationale,
+                      confidence=decision.confidence)
 
 
 # 4. PREDICT (keystone) ------------------------------------------------------
-async def learn_baseline(client: httpx.AsyncClient, samples: int = 8) -> tuple[float, float, float]:
+async def learn_baseline(client: httpx.AsyncClient, samples: int = 8,
+                         interval: float = 0.05) -> tuple[float, float, float]:
     """Learn the system's HEALTHY error_rate distribution and derive a control limit.
 
     Returns (mean, stdev, upper_control_limit). The UCL is a 4-sigma control limit with a
@@ -190,22 +245,22 @@ async def learn_baseline(client: httpx.AsyncClient, samples: int = 8) -> tuple[f
     vals: list[float] = []
     for _ in range(samples):
         vals.append((await sense(client))["error_rate"])
-        await asyncio.sleep(0.05)
+        await asyncio.sleep(interval)
     mean = statistics.fmean(vals)
     std = statistics.pstdev(vals) if len(vals) > 1 else 0.0
     ucl = max(mean + 4 * std, mean * 1.5)  # 4-sigma limit, with a floor to absorb jitter
     return mean, std, ucl
 
 
-def predict(hypo: Hypothesis, band_upper: float) -> Prediction:
+def predict(hypo: Hypothesis, band_upper: float, horizon: float = HORIZON_SECONDS) -> Prediction:
     return Prediction(
         metric="error_rate",
         lower=0.0,
         upper=band_upper,
-        horizon_seconds=HORIZON_SECONDS,
+        horizon_seconds=int(round(horizon)),
         statement=(
             f"If '{hypo.action_class}' addresses the root cause, error_rate will return below "
-            f"the learned control limit ({band_upper:.4f}) within {HORIZON_SECONDS}s. "
+            f"the learned control limit ({band_upper:.4f}) within {horizon:g}s. "
             f"If it does not, the diagnosis was wrong."
         ),
     )
@@ -224,8 +279,11 @@ async def act(client: httpx.AsyncClient, action_class: str) -> None:
     await _sandbox_post(client, endpoint)
 
 
-async def verify(client: httpx.AsyncClient, pred: Prediction) -> tuple[float, bool]:
-    await asyncio.sleep(pred.horizon_seconds)  # hold the system to its predicted horizon
+async def verify(client: httpx.AsyncClient, pred: Prediction,
+                 horizon: float | None = None) -> tuple[float, bool]:
+    # Hold the system to its predicted horizon. Exams pass a short horizon (the sandbox reacts
+    # to control actions immediately) so many incidents can be graded quickly.
+    await asyncio.sleep(pred.horizon_seconds if horizon is None else horizon)
     metrics = await sense(client)
     value = metrics[pred.metric]
     in_band = pred.lower <= value <= pred.upper
@@ -233,12 +291,18 @@ async def verify(client: httpx.AsyncClient, pred: Prediction) -> tuple[float, bo
 
 
 # 8. orchestration -----------------------------------------------------------
-async def run_once(scenario_fault: str, ledger: Ledger, stamp: str,
-                   emit: Callable[[str], None] | None = None) -> LoopResult:
+async def run_once(scenario_fault: str | Scenario, ledger: Ledger, stamp: str,
+                   emit: Callable[[str], None] | None = None,
+                   params: LoopParams | None = None) -> LoopResult:
     """One full loop against a freshly-injected fault. `stamp` is an ISO time from the caller.
 
-    `emit`, if given, receives each trace line as it happens (used by the live dashboard).
+    `scenario_fault` may be a plain fault name (live demo, base magnitude) or a `Scenario`
+    (proving ground, parameterised severity/noise + known correct action). `params` tunes the
+    timing/mode — the proving ground passes a fast `exam` profile. `emit`, if given, receives
+    each trace line as it happens (used by the live dashboard).
     """
+    p = params or LoopParams()
+    scenario = scenario_fault if isinstance(scenario_fault, Scenario) else Scenario(scenario_fault)
     trace: list[str] = []
 
     def log(msg: str) -> None:
@@ -250,31 +314,36 @@ async def run_once(scenario_fault: str, ledger: Ledger, stamp: str,
             except Exception:  # noqa: BLE001 — never let the UI break the loop
                 pass
 
+    fp = brain.fingerprint()
+
     async with httpx.AsyncClient(timeout=15, verify=config.verify_tls) as client:
         await _sandbox_post(client, "/reset")
-        mean, std, band_upper = await learn_baseline(client)
+        mean, std, band_upper = await learn_baseline(client, p.baseline_samples, p.baseline_interval)
         log(f"[BASELINE]   healthy error_rate mean={mean:.4f} sd={std:.5f} -> "
             f"control limit {band_upper:.4f}")
-        await _sandbox_post(client, f"/fault/{scenario_fault}")
+        await _inject(client, scenario)
 
         before = await sense(client)
         log(f"[SENSE]      error_rate={before['error_rate']:.3f} "
             f"db_connections={before['db_connections']:.0f} "
             f"p95_latency_ms={before['p95_latency_ms']:.0f}")
 
-        ctx = await splunk_context(
-            f"error_rate {before['error_rate']:.3f}, db_connections {before['db_connections']:.0f}")
-        log(f"[CONTEXT]    {ctx}")
+        if p.use_splunk_context:
+            ctx = await splunk_context(
+                f"error_rate {before['error_rate']:.3f}, db_connections {before['db_connections']:.0f}")
+            log(f"[CONTEXT]    {ctx}")
+        else:
+            ctx = "(Splunk context skipped during exam)"
 
-        hypo = await hypothesize_with_brain(before, ctx, log)
+        hypo = await hypothesize_with_brain(before, ctx, log, p.brain_timeout, p.brain_retries)
         if hypo is None:
             log("[HYPOTHESIS] system healthy — no action needed")
-            return LoopResult(scenario_fault, before, Hypothesis("none", "", "healthy"),
+            return LoopResult(scenario.fault, before, Hypothesis("none", "", "healthy"),
                               Prediction("error_rate", 0, 0, 0, "n/a"), False,
                               before["error_rate"], True, False, splunk_context=ctx, trace=trace)
-        log(f"[HYPOTHESIS] {hypo.action_class} — {hypo.rationale}")
+        log(f"[HYPOTHESIS] {hypo.action_class} (confidence {hypo.confidence:.2f}) — {hypo.rationale}")
 
-        pred = predict(hypo, band_upper)
+        pred = predict(hypo, band_upper, p.horizon_seconds)
         log(f"[PREDICT]    {pred.statement}")
 
         autonomous = ledger.may_act_autonomously(hypo.action_class)
@@ -285,20 +354,20 @@ async def run_once(scenario_fault: str, ledger: Ledger, stamp: str,
         log(f"[TRUST]      '{hypo.action_class}': {rate_s}, confidence {conf:.2f} "
             f"(needs >= {config.autonomy_threshold:.2f} over >= {config.autonomy_min_samples}) -> "
             f"{'AUTONOMOUS' if autonomous else 'HUMAN-IN-THE-LOOP'}")
-        if not autonomous:
-            log("[APPROVAL]   not yet trusted to act alone -> requesting human approval... "
+        if p.kind != "exam" and not autonomous:
+            log("[APPROVAL]   not yet licensed to act alone -> requesting human approval... "
                 "granted (demo auto-approves)")
 
         if not gate(hypo):
             log(f"[GATE]       BLOCKED — '{hypo.action_class}' is not reversible/in-scope")
-            return LoopResult(scenario_fault, before, hypo, pred, False,
+            return LoopResult(scenario.fault, before, hypo, pred, False,
                               before["error_rate"], False, True, splunk_context=ctx, trace=trace)
         log(f"[GATE]       OK — '{hypo.action_class}' is reversible and in blast-radius")
 
         await act(client, hypo.action_class)
         log(f"[ACT]        executed {hypo.action_class}")
 
-        value, in_band = await verify(client, pred)
+        value, in_band = await verify(client, pred, p.horizon_seconds)
         log(f"[VERIFY]     error_rate now {value:.3f} — "
             f"{'INSIDE' if in_band else 'OUTSIDE'} forecast band [<= {pred.upper:.3f}]")
 
@@ -306,16 +375,21 @@ async def run_once(scenario_fault: str, ledger: Ledger, stamp: str,
         corrective = None
         if in_band:
             log("[DECIDE]     prediction held -> incident RESOLVED")
-        else:
+        elif p.do_corrective:
             escalated = True
             log("[DECIDE]     reality diverged from my forecast -> I WAS WRONG. "
                 "Escalating to a human and reverting intent.")
-            # Safety net: the correct remediation a human would approve.
-            corrective = "rollback_deploy"
-            await act(client, corrective)
-            cval, cok = await verify(client, pred)
-            log(f"[RECOVER]    human-approved '{corrective}' applied -> error_rate {cval:.3f} "
-                f"({'recovered' if cok else 'still degraded'})")
+            # Safety net: the remediation a human would approve (the scenario's true fix when
+            # known, else a deploy rollback).
+            corrective = scenario.correct_action or "rollback_deploy"
+            if corrective in ACTIONS:
+                await act(client, corrective)
+                cval, cok = await verify(client, pred, p.horizon_seconds)
+                log(f"[RECOVER]    human-approved '{corrective}' applied -> error_rate {cval:.3f} "
+                    f"({'recovered' if cok else 'still degraded'})")
+        else:
+            escalated = True
+            log("[DECIDE]     reality diverged from my forecast -> I WAS WRONG (exam graded as MISS).")
 
         ledger.record(Outcome(
             action_class=hypo.action_class,
@@ -323,7 +397,10 @@ async def run_once(scenario_fault: str, ledger: Ledger, stamp: str,
             predicted=pred.statement,
             correct=in_band,
             timestamp=stamp,
-            note=f"scenario={scenario_fault}",
+            confidence=hypo.confidence,
+            kind=p.kind,
+            fingerprint=fp,
+            note=f"scenario={scenario.label or scenario.fault}",
         ))
         new_rate = ledger.hit_rate(hypo.action_class)
         new_conf = ledger.confidence(hypo.action_class)
@@ -331,5 +408,15 @@ async def run_once(scenario_fault: str, ledger: Ledger, stamp: str,
             f"{new_rate:.0%} over {ledger.sample_size(hypo.action_class)} run(s), "
             f"confidence {new_conf:.2f}")
 
-        return LoopResult(scenario_fault, before, hypo, pred, True, value, in_band,
+        return LoopResult(scenario.fault, before, hypo, pred, True, value, in_band,
                           escalated, corrective, ctx, trace)
+
+
+async def _inject(client: httpx.AsyncClient, scenario: Scenario) -> None:
+    """Inject a scenario: parameterised via /scenario, or base-magnitude via /fault/{name}."""
+    if scenario.severity != 1.0 or scenario.noise != 0.03:
+        await client.post(f"{config.sandbox_url}/scenario",
+                          json={"fault": scenario.fault, "severity": scenario.severity,
+                                "noise": scenario.noise})
+    else:
+        await _sandbox_post(client, f"/fault/{scenario.fault}")

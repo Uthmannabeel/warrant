@@ -9,7 +9,7 @@ env/
 # Warrant local state
 .env
 ledger.db
-ledger.json
+ledger*.json
 *.log
 
 # Editor / OS

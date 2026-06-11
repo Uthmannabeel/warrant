@@ -27,10 +27,20 @@ class Config:
     # requires a minimum track record — so one lucky success can't grant autonomy.
     autonomy_threshold: float = float(os.getenv("WARRANT_AUTONOMY_THRESHOLD", "0.5"))
     autonomy_min_samples: int = int(os.getenv("WARRANT_AUTONOMY_MIN_SAMPLES", "4"))
+    # A license also requires calibration: the Brier score (mean squared error between the
+    # agent's stated confidence and reality) must stay at/below this. A confidently-wrong
+    # agent fails calibration even with a passable hit-rate — so trust can't be faked by bravado.
+    calibration_max: float = float(os.getenv("WARRANT_CALIBRATION_MAX", "0.4"))
+    # Where the trust ledger lives. Override to isolate a demo (e.g. the MCP-gating walkthrough).
+    ledger_path: str = os.getenv("WARRANT_LEDGER_PATH", "ledger.json")
     # Optional Gemini diagnosis brain. Warrant still gates, predicts, verifies, and ledgers
     # every action even when this is enabled.
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
     gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    # Which diagnosis brain to use: "auto" (Gemini if a key is present, else heuristic),
+    # "gemini" (force the LLM), or "heuristic" (force the deterministic rules — used for a
+    # reproducible demo/capture that never depends on a flaky network).
+    brain_mode: str = os.getenv("WARRANT_BRAIN", "auto").strip().lower()
 
     # Phase 1 — telemetry ingestion
     hec_url: str = os.getenv("SPLUNK_HEC_URL", "")
