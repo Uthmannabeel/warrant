@@ -1,0 +1,32 @@
+' Warrant — the trust ledger, computed natively in Splunk.
+'
+' Warrant records every graded outcome as an event. On a HEC-enabled tenant those events land
+' in Splunk and THIS saved search reproduces the exact licensing math the agent uses locally —
+' so the license registry can live in a Splunk dashboard, owned and audited by the platform.
+'
+' Each outcome event looks like:
+'   { action_class, correct(true/false), confidence, kind(exam/production), fingerprint, _time }
+'
+' --- License registry: Wilson lower bound + Brier calibration per action class ---------------
+
+index=warrant sourcetype=warrant:outcome
+| eval ok = if(correct=="true" OR correct==1, 1, 0)
+| eval se = pow(confidence - ok, 2)                         ' squared error -> Brier (calibration)
+| stats sum(ok) as hits count as n avg(se) as brier
+        values(fingerprint) as fingerprints by action_class
+| eval z = 1.96                                             ' 95% Wilson interval
+| eval phat = hits / n
+| eval denom = 1 + (z*z)/n
+| eval centre = phat + (z*z)/(2*n)
+| eval margin = z * sqrt((phat*(1-phat) + (z*z)/(4*n)) / n)
+| eval confidence = round((centre - margin) / denom, 3)     ' Wilson lower bound = earned trust
+| eval hit_rate = round(phat, 3)
+| eval brier = round(brier, 3)
+| eval calibration = case(brier<=0.10,"excellent", brier<=0.20,"good", brier<=0.30,"fair", 1==1,"poor")
+| eval drifted = if(mvcount(fingerprints) > 1, "yes", "no")  ' brain changed across the record?
+| eval status = case(
+        drifted=="yes", "PROVISIONAL (drift)",
+        confidence>=0.5 AND n>=4 AND brier<=0.4, "LICENSED",
+        1==1, "PROVISIONAL")
+| table action_class status confidence hit_rate calibration brier n
+| sort - confidence

@@ -3,8 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Warrant — an agent that earns the right to act</title>
-<meta name="description" content="An autonomous remediation agent that earns the right to act — Splunk Agentic Ops Hackathon."/>
+<title>Warrant — a licensing authority for AI agents</title>
 <style>
   :root{
     --bg:#0b1020; --panel:#121a30; --panel2:#0e1528; --ink:#e8edf7; --muted:#8da2c0;
@@ -13,72 +12,86 @@
   }
   *{box-sizing:border-box}
   body{margin:0;background:radial-gradient(1200px 600px at 70% -10%,#16203c 0,var(--bg) 60%);
-       color:var(--ink);font:14px/1.5 ui-sans-serif,system-ui,Segoe UI,Roboto,Arial;min-height:100vh}
-  a{color:var(--blue);text-decoration:none} a:hover{text-decoration:underline}
+       color:var(--ink);font:14px/1.5 ui-sans-serif,system-ui,Segoe UI,Roboto,Arial}
   header{display:flex;align-items:center;justify-content:space-between;gap:16px;
-         padding:18px 26px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+         padding:16px 24px;border-bottom:1px solid var(--line);flex-wrap:wrap}
   .brand h1{margin:0;font-size:19px;letter-spacing:.2px}
   .brand p{margin:2px 0 0;color:var(--muted);font-size:13px}
-  .right{display:flex;align-items:center;gap:14px}
-  .ghlink{color:var(--muted);font-size:13px}
+  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .act-chip{padding:6px 12px;border-radius:99px;font-weight:700;font-size:12px;border:1px solid var(--line);
+            background:#0c142a;color:var(--muted)}
+  .act-chip.on{color:#fff;border-color:var(--blue);box-shadow:0 0 0 2px rgba(43,111,255,.18) inset}
   button{background:linear-gradient(180deg,#2b6fff,#1f5be0);color:#fff;border:0;border-radius:10px;
-         padding:11px 18px;font-weight:600;cursor:pointer;box-shadow:0 6px 18px rgba(43,111,255,.35)}
-  button:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
-  .wrap{display:grid;grid-template-columns:1.4fr .9fr;gap:18px;padding:18px 26px;max-width:1200px;margin:0 auto}
-  @media(max-width:880px){.wrap{grid-template-columns:1fr}}
+         padding:10px 16px;font-weight:600;cursor:pointer;box-shadow:0 6px 18px rgba(43,111,255,.3)}
+  button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+  .wrap{display:grid;grid-template-columns:1.35fr .95fr;gap:16px;padding:16px 24px}
   .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);
-        border-radius:14px;padding:16px 18px}
-  .card h2{margin:0 0 12px;font-size:12px;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted)}
-  #log{height:540px;overflow:auto;font-family:ui-monospace,Consolas,monospace;font-size:12.5px}
+        border-radius:14px;padding:14px 16px;margin-bottom:16px}
+  .card h2{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:1.3px;color:var(--muted)}
+  #log{height:360px;overflow:auto;font-family:ui-monospace,Consolas,monospace;font-size:12px}
   .ln{padding:2px 6px;border-radius:6px;white-space:pre-wrap;word-break:break-word}
-  .tag{display:inline-block;min-width:96px;color:var(--muted)}
-  .round-sep{margin:12px 0 6px;color:#fff;font-weight:700;border-top:1px dashed var(--line);padding-top:10px}
+  .tag{display:inline-block;min-width:88px;color:var(--muted)}
+  .round-sep{margin:10px 0 6px;color:#fff;font-weight:700;border-top:1px dashed var(--line);padding-top:8px}
+  .act-banner{margin:12px 0 6px;font-weight:800;font-size:13px;letter-spacing:.4px;color:#fff;
+              border-left:3px solid var(--blue);padding:6px 10px;background:rgba(43,111,255,.10);border-radius:6px}
   .t-BRAIN .tag{color:var(--purple)} .t-PREDICT .tag{color:var(--blue)}
   .t-CONTEXT .tag{color:var(--teal)} .t-TRUST .tag{color:var(--amber)}
   .t-APPROVAL .tag{color:var(--amber)} .t-ACT .tag{color:var(--cyan)}
   .t-LEDGER .tag{color:var(--amber)} .t-BASELINE .tag{color:var(--muted)}
-  .ok{color:var(--green)} .bad{color:var(--red)} .warn{color:var(--amber)}
-  .trust-val{font-size:42px;font-weight:800;letter-spacing:.5px}
-  .bar{height:12px;background:#0a1226;border:1px solid var(--line);border-radius:99px;overflow:hidden;margin:10px 0}
-  .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2b6fff,#36d2c4);transition:width .4s}
-  .badge{display:inline-block;padding:5px 11px;border-radius:99px;font-weight:700;font-size:12px}
-  .badge.auto{background:rgba(34,201,138,.16);color:var(--green);border:1px solid rgba(34,201,138,.4)}
-  .badge.human{background:rgba(255,192,77,.14);color:var(--amber);border:1px solid rgba(255,192,77,.4)}
-  .sub{color:var(--muted);font-size:12px}
-  canvas{width:100%;height:230px;display:block}
-  .legend{display:flex;gap:16px;color:var(--muted);font-size:12px;margin-top:8px;flex-wrap:wrap}
+  .t-DRIFT .tag{color:var(--purple)}
+  .ok{color:var(--green)} .bad{color:var(--red)} .warn{color:var(--amber)} .pur{color:var(--purple)}
+  .lic{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;
+       padding:10px 12px;border:1px solid var(--line);border-radius:11px;margin-bottom:9px;background:#0c142a}
+  .lic .name{font-weight:700;font-family:ui-monospace,Consolas,monospace;font-size:12.5px}
+  .lic .meta{color:var(--muted);font-size:11.5px;grid-column:1}
+  .pill{justify-self:end;grid-row:1;padding:4px 10px;border-radius:99px;font-weight:800;font-size:11px;letter-spacing:.4px}
+  .pill.LICENSED{background:rgba(34,201,138,.16);color:var(--green);border:1px solid rgba(34,201,138,.45)}
+  .pill.PROVISIONAL{background:rgba(255,192,77,.14);color:var(--amber);border:1px solid rgba(255,192,77,.42)}
+  .pill.SUSPENDED{background:rgba(255,92,114,.16);color:var(--red);border:1px solid rgba(255,92,114,.45)}
+  .cbar{grid-column:1 / span 2;height:8px;background:#0a1226;border:1px solid var(--line);border-radius:99px;overflow:hidden}
+  .cbar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2b6fff,#36d2c4);transition:width .5s}
+  .thr{font-size:11px;color:var(--muted);grid-column:1 / span 2;margin-top:-2px}
+  .exambar{height:10px;background:#0a1226;border:1px solid var(--line);border-radius:99px;overflow:hidden;margin:4px 0 8px}
+  .exambar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#b388ff,#46c6ff);transition:width .2s}
+  .examnow{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--muted);min-height:18px}
+  .fp{font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--muted)}
+  canvas{width:100%;height:180px;display:block}
+  .legend{display:flex;gap:14px;color:var(--muted);font-size:11px;margin-top:6px;flex-wrap:wrap}
   .dot{display:inline-block;width:9px;height:9px;border-radius:99px;margin-right:5px;vertical-align:middle}
-  .foot{padding:6px 26px 26px;color:var(--muted);font-size:12px;max-width:1200px;margin:0 auto}
+  .foot{padding:4px 24px 20px;color:var(--muted);font-size:12px}
+  .sub{color:var(--muted);font-size:12px}
+  a{color:var(--blue)}
 </style>
 </head>
 <body>
 <header>
   <div class="brand">
-    <h1>WARRANT <span class="sub">— an agent that earns the right to act</span></h1>
-    <p>Falsifiable predictions · earned autonomy · trustworthy when it's wrong · Splunk Agentic Ops</p>
+    <h1>WARRANT <span class="sub">— a licensing authority for AI agents</span></h1>
+    <p>Agents earn the right to act in a proving ground · licenses are revocable · drift is caught</p>
   </div>
-  <div class="right">
-    <a class="ghlink" href="https://github.com/Uthmannabeel/warrant" target="_blank" rel="noopener">⌥ Source on GitHub</a>
-    <button id="run">▶ Run incidents</button>
+  <div class="controls">
+    <span class="act-chip" data-act="exams">① Proving ground</span>
+    <span class="act-chip" data-act="production">② Production</span>
+    <span class="act-chip" data-act="drift">③ Model update</span>
+    <span class="act-chip" data-act="recertify">④ Re-certify</span>
+    <button id="play">▶ Replay</button>
   </div>
 </header>
 
 <div class="wrap">
-  <div class="card">
-    <h2>Agent activity</h2>
-    <div id="log"></div>
-  </div>
   <div>
-    <div class="card" style="margin-bottom:18px">
-      <h2>Trust — restart_connection_pool</h2>
-      <div><span id="trustVal" class="trust-val">—</span> <span class="sub">confidence</span></div>
-      <div class="bar"><i id="trustBar"></i></div>
-      <div><span id="trustBadge" class="badge human">awaiting run</span>
-           <span id="trustMeta" class="sub"></span></div>
+    <div class="card">
+      <h2>Proving ground</h2>
+      <div class="exambar"><i id="examBar"></i></div>
+      <div class="examnow" id="examNow">A representative replay of a real run. Press ▶ Replay.</div>
     </div>
     <div class="card">
-      <h2>Error rate vs. learned control limit</h2>
-      <canvas id="chart" width="640" height="230"></canvas>
+      <h2>Agent activity</h2>
+      <div id="log"></div>
+    </div>
+    <div class="card">
+      <h2>Error rate vs. learned control limit (production)</h2>
+      <canvas id="chart" width="640" height="180"></canvas>
       <div class="legend">
         <span><i class="dot" style="background:var(--red)"></i>before fix</span>
         <span><i class="dot" style="background:var(--green)"></i>after (in band)</span>
@@ -87,105 +100,114 @@
       </div>
     </div>
   </div>
+  <div>
+    <div class="card">
+      <h2>License registry</h2>
+      <div id="registry"><div class="sub">No action classes certified yet.</div></div>
+      <div class="fp" id="fp"></div>
+    </div>
+    <div class="card">
+      <h2>What you're watching</h2>
+      <div class="sub">
+        Warrant issues one <b>license per action class</b>. A license needs three things: a
+        Wilson-bounded hit-rate over enough graded outcomes, good <b>calibration</b> (confidence
+        that matches reality), and a brain whose <b>fingerprint</b> hasn't changed. Licenses are
+        <b>revoked</b> on a violated prediction and invalidated on model drift.
+        <br/><br/>
+        Source &amp; live version:
+        <a href="https://github.com/Uthmannabeel/warrant">github.com/Uthmannabeel/warrant</a>
+      </div>
+    </div>
+  </div>
 </div>
-<div class="foot">
-  Every agent is impressive when it's right. Warrant is trustworthy when it's <b>wrong</b>.
-  &nbsp;·&nbsp; This page replays a representative run of the live agent (which drives Splunk MCP + Gemini).
-  Run it yourself from the <a href="https://github.com/Uthmannabeel/warrant" target="_blank" rel="noopener">source</a>.
-</div>
+<div class="foot">Evals tell you how smart an agent is. Warrant tells production <b>how much rope to give it</b> — and takes it back.</div>
 
 <script>
-const logEl = document.getElementById('log');
-const btn = document.getElementById('run');
-const metrics = [];
-const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const $ = id => document.getElementById(id);
+const logEl=$('log'), regEl=$('registry'), THRESH=0.5;
+const metrics=[]; let events=[];
 
-function tagOf(msg){ const m = msg.match(/^\[([A-Z]+)\]/); return m ? m[1] : ''; }
-function esc(s){ return s.replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+function tagOf(m){const x=m.match(/^\[([A-Z]+)\]/);return x?x[1]:''}
 function addLine(msg){
-  const tag = tagOf(msg);
-  const div = document.createElement('div');
-  div.className = 'ln t-' + tag;
-  let rest = msg.replace(/^\[[A-Z]+\]\s*/,'');
-  let cls = '';
-  if(/INSIDE|RESOLVED|recovered|HIT/.test(msg)) cls='ok';
-  if(/OUTSIDE|WRONG|MISS|still degraded/.test(msg)) cls='bad';
-  if(/AUTONOMOUS/.test(msg)) cls='ok';
-  if(/HUMAN-IN-THE-LOOP|approval/.test(msg)) cls='warn';
-  div.innerHTML = '<span class="tag">'+tag+'</span><span class="'+cls+'">'+esc(rest)+'</span>';
-  logEl.appendChild(div); logEl.scrollTop = logEl.scrollHeight;
+  const tag=tagOf(msg), d=document.createElement('div'); d.className='ln t-'+tag;
+  let rest=msg.replace(/^\[[A-Z]+\]\s*/,''), cls='';
+  if(/INSIDE|RESOLVED|recovered|HIT|LICENSED|AUTONOMOUS/.test(msg)) cls='ok';
+  if(/OUTSIDE|WRONG|MISS|still degraded|SUSPENDED|revoked/.test(msg)) cls='bad';
+  if(/HUMAN-IN-THE-LOOP|approval|PROVISIONAL/.test(msg)) cls='warn';
+  if(/DRIFT/.test(msg)) cls='pur';
+  d.innerHTML='<span class="tag">'+tag+'</span><span class="'+cls+'">'+
+    rest.replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))+'</span>';
+  logEl.appendChild(d); logEl.scrollTop=logEl.scrollHeight;
 }
-function roundSep(n,total,scenario){
-  const div=document.createElement('div'); div.className='round-sep';
-  div.textContent = 'Round '+n+'/'+total+' — '+(scenario==='leak'?'CONNECTION LEAK':'DECOY (obvious fix is wrong)');
-  logEl.appendChild(div); logEl.scrollTop=logEl.scrollHeight;
-}
-function updateTrust(d){
-  const pct = Math.round((d.conf||0)*100);
-  document.getElementById('trustVal').textContent = pct+'%';
-  document.getElementById('trustBar').style.width = Math.min(100,pct)+'%';
-  const badge=document.getElementById('trustBadge');
-  badge.textContent = d.autonomous ? 'AUTONOMOUS' : 'HUMAN-IN-THE-LOOP';
-  badge.className = 'badge ' + (d.autonomous?'auto':'human');
-  document.getElementById('trustMeta').textContent =
-     ' · ' + Math.round((d.rate||0)*100) + '% over ' + d.n + ' run(s)';
+function sep(text,cls){const d=document.createElement('div');d.className=cls;d.textContent=text;
+  logEl.appendChild(d);logEl.scrollTop=logEl.scrollHeight;}
+function renderRegistry(ev){
+  $('fp').textContent='brain fingerprint: '+ev.fingerprint;
+  if(!ev.items.length){regEl.innerHTML='<div class="sub">No action classes certified yet.</div>';return;}
+  regEl.innerHTML='';
+  ev.items.slice().sort((a,b)=>a.action_class.localeCompare(b.action_class)).forEach(l=>{
+    const pct=Math.round((l.confidence||0)*100);
+    const hit=l.hit_rate==null?'—':Math.round(l.hit_rate*100)+'%';
+    const div=document.createElement('div'); div.className='lic';
+    div.innerHTML=
+      '<div class="name">'+l.action_class+'</div>'+
+      '<div class="pill '+l.status+'">'+l.status+'</div>'+
+      '<div class="meta">conf '+(l.confidence||0).toFixed(2)+' · hit '+hit+
+        ' · calib '+l.calibration+' · n='+l.samples+' ('+l.exams+' exam/'+l.production+' prod)'+
+        (l.drifted?' · ⚠ drifted':'')+'</div>'+
+      '<div class="cbar"><i style="width:'+Math.min(100,pct)+'%"></i></div>'+
+      '<div class="thr">threshold '+Math.round(THRESH*100)+'% &nbsp;'+(l.reason||'')+'</div>';
+    regEl.appendChild(div);
+  });
 }
 function drawChart(){
-  const c=document.getElementById('chart'), x=c.getContext('2d');
-  const W=c.width,H=c.height,padL=40,padB=24,padT=12;
-  x.clearRect(0,0,W,H);
-  if(!metrics.length) return;
-  let maxV=0; metrics.forEach(m=>{maxV=Math.max(maxV,m.before,m.after,m.limit)});
-  maxV=maxV*1.15||0.1;
-  const plotH=H-padB-padT, plotW=W-padL-8;
-  const y=v=>padT+plotH-(v/maxV)*plotH;
-  x.strokeStyle='#22304f'; x.lineWidth=1;
-  x.beginPath(); x.moveTo(padL,padT); x.lineTo(padL,padT+plotH); x.lineTo(W-4,padT+plotH); x.stroke();
-  const n=metrics.length, slot=plotW/n;
-  metrics.forEach((m,i)=>{
-    const cx=padL+slot*i+slot/2, bw=Math.min(26,slot*0.3);
-    x.fillStyle='rgba(255,92,114,.85)';
-    x.fillRect(cx-bw-2, y(m.before), bw, padT+plotH-y(m.before));
-    x.fillStyle = m.correct ? 'rgba(34,201,138,.9)' : 'rgba(255,92,114,.9)';
-    x.fillRect(cx+2, y(m.after), bw, padT+plotH-y(m.after));
-    x.fillStyle='#8da2c0'; x.font='11px system-ui'; x.textAlign='center';
-    x.fillText('R'+m.round, cx, H-8);
-  });
+  const c=$('chart'),x=c.getContext('2d'),W=c.width,H=c.height,padL=40,padB=22,padT=10;
+  x.clearRect(0,0,W,H); if(!metrics.length)return;
+  let mx=0; metrics.forEach(m=>{mx=Math.max(mx,m.before,m.after,m.limit)}); mx=mx*1.15||0.1;
+  const pH=H-padB-padT,pW=W-padL-8,y=v=>padT+pH-(v/mx)*pH;
+  x.strokeStyle='#22304f';x.beginPath();x.moveTo(padL,padT);x.lineTo(padL,padT+pH);x.lineTo(W-4,padT+pH);x.stroke();
+  const slot=pW/metrics.length;
+  metrics.forEach((m,i)=>{const cx=padL+slot*i+slot/2,bw=Math.min(24,slot*0.3);
+    x.fillStyle='rgba(255,92,114,.85)';x.fillRect(cx-bw-2,y(m.before),bw,padT+pH-y(m.before));
+    x.fillStyle=m.correct?'rgba(34,201,138,.9)':'rgba(255,92,114,.9)';x.fillRect(cx+2,y(m.after),bw,padT+pH-y(m.after));
+    x.fillStyle='#8da2c0';x.font='11px system-ui';x.textAlign='center';x.fillText('R'+m.round,cx,H-7);});
   const lim=metrics[metrics.length-1].limit;
-  x.strokeStyle='#ffc04d'; x.setLineDash([5,4]); x.beginPath();
-  x.moveTo(padL,y(lim)); x.lineTo(W-4,y(lim)); x.stroke(); x.setLineDash([]);
-  x.fillStyle='#ffc04d'; x.textAlign='left'; x.font='10px system-ui';
-  x.fillText('control limit', padL+4, y(lim)-4);
+  x.strokeStyle='#ffc04d';x.setLineDash([5,4]);x.beginPath();x.moveTo(padL,y(lim));x.lineTo(W-4,y(lim));x.stroke();x.setLineDash([]);
+  x.fillStyle='#ffc04d';x.textAlign='left';x.font='10px system-ui';x.fillText('control limit',padL+4,y(lim)-4);
 }
-function delayFor(d){
-  if(d.type==='round') return 500;
-  if(d.type==='metric'||d.type==='ledger') return 140;
-  if(d.type==='log'){
-    const m=d.msg;
-    if(/VERIFY/.test(m)) return 850;
-    if(/DECIDE|RECOVER/.test(m)) return 750;
-    if(/\[ACT\]/.test(m)) return 420;
-    if(/PREDICT|BRAIN/.test(m)) return 360;
-    return 140;
+function chip(act){document.querySelectorAll('.act-chip').forEach(c=>c.classList.toggle('on',c.dataset.act===act));}
+
+const delays={act:850,phase:300,round:650,log:140,exam:120,metric:600,licenses:0};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+function applyEvent(d){
+  if(d.type==='act'){ chip(d.act); sep('▶ '+d.title,'act-banner'); $('examBar').style.width='0%'; }
+  else if(d.type==='log') addLine(d.msg);
+  else if(d.type==='licenses') renderRegistry(d);
+  else if(d.type==='exam'){
+    $('examBar').style.width=Math.round(d.n/d.total*100)+'%';
+    $('examNow').innerHTML='exam '+d.n+'/'+d.total+' &nbsp; '+d.scenario+
+      ' &nbsp;→ chose <b>'+d.chosen+'</b> &nbsp;'+(d.correct?'<span class="ok">HIT</span>':'<span class="bad">MISS</span>');
   }
-  return 100;
+  else if(d.type==='phase'){ sep(d.title+' — '+d.total+' exams','round-sep'); $('examBar').style.width='0%'; }
+  else if(d.type==='round'){ sep('Round '+d.n+'/'+d.total+' — '+d.title,'round-sep'); }
+  else if(d.type==='metric'){ metrics.push(d); drawChart(); }
 }
-async function run(){
-  btn.disabled=true; logEl.innerHTML=''; metrics.length=0; drawChart();
-  let events;
-  try { events = await fetch('events.json',{cache:'no-store'}).then(r=>r.json()); }
-  catch(e){ addLine('[ERROR] could not load events.json'); btn.disabled=false; return; }
-  for(const d of events){
-    if(d.type==='round') roundSep(d.n,d.total,d.scenario);
-    else if(d.type==='log') addLine(d.msg);
-    else if(d.type==='metric'){ metrics.push(d); drawChart(); }
-    else if(d.type==='ledger') updateTrust(d);
-    else if(d.type==='done') break;
-    await sleep(delayFor(d));
-  }
-  btn.disabled=false;
+
+async function replay(){
+  $('play').disabled=true;
+  logEl.innerHTML=''; regEl.innerHTML='<div class="sub">No action classes certified yet.</div>';
+  metrics.length=0; drawChart(); $('examBar').style.width='0%';
+  for(const d of events){ applyEvent(d); await sleep(delays[d.type]??120); }
+  $('examNow').innerHTML='Replay complete. This is a <b>representative run</b> of the live dashboard.';
+  chip(''); $('play').disabled=false;
 }
-btn.onclick=run;
+
+fetch('events.json').then(r=>r.json()).then(j=>{
+  events = j.events||[];
+  $('play').onclick=replay;
+  replay();  // auto-play on load
+}).catch(()=>{ $('examNow').textContent='Could not load events.json.'; });
 </script>
 </body>
 </html>

@@ -1,73 +1,86 @@
 # Warrant
 
-**An autonomous remediation agent that earns the right to act.**
+**A licensing authority for AI agents.**
 
-Warrant is built on one idea: an AI ops agent shouldn't be trusted because it *sounds*
-smart — it should be trusted because it has a **track record**, the same way we trust a
-surgeon or a pilot. Before Warrant touches anything, it commits to a **falsifiable
-prediction** of what should happen. Reality — not the model — decides whether it was right.
-It is permitted to act autonomously only where its past predictions have survived contact
-with reality.
+Evals tell you how smart an agent is. Warrant tells production **how much rope to give it** —
+and takes the rope back the moment a prediction fails or the model changes underneath you.
 
-> Built for the **Splunk Agentic Ops Hackathon** — theme: *reimagine the future of
-> agentic operations using Splunk AI.*
+An agent earns a **license per action class** the way a pilot earns one: not by crashing real
+planes, but by passing graded exams in a **proving ground**. Every exam is judged against the
+agent's own **falsifiable prediction** — reality, not the model, decides if it was right. A
+license is granted only on a Wilson-bounded track record with good **calibration**, is **revoked**
+when a production prediction is violated, and is **invalidated** when the agent's brain changes
+(model/prompt drift).
+
+> Built for the **Splunk Agentic Ops Hackathon** — theme: *reimagine the future of agentic
+> operations using Splunk AI.*
 
 **🌐 Live demo (replay of a real run): https://warrant-chi.vercel.app**
 
 ---
 
+## The story in four acts
+
+1. **Proving ground** — the agent sits ~15 manufactured incidents in seconds and earns a license
+   per action class (`PROVISIONAL → LICENSED`), without touching production.
+2. **Production** — a real leak (it's licensed, so it acts autonomously and is proven right),
+   then a **decoy** (the obvious fix is wrong → prediction violated → *"I was wrong"* → escalate
+   → rollback recovers → license **SUSPENDED**).
+3. **Model updated overnight** — the brain's fingerprint changes; every license drops to
+   **PROVISIONAL**. Nothing else in ops notices a silent model swap. Warrant does.
+4. **Re-certify** — fresh exams re-earn the licenses under the new brain.
+
 ## The control loop
 
 ```
-1. SENSE        Read live telemetry                     (sandbox metrics)
-2. CONTEXT      Pull real Splunk data + AI reasoning     (Splunk MCP: splunk_run_query, saia_*)
-3. HYPOTHESIZE  LLM agent picks a bounded remediation    (Gemini; heuristic fallback)
-4. PREDICT      Commit to a FALSIFIABLE forecast band    (Warrant)  ← keystone
+1. SENSE        Read live telemetry                      (sandbox metrics)
+2. CONTEXT      Pull real Splunk data + AI reasoning      (Splunk MCP: splunk_run_query, saia_*)
+3. DIAGNOSE     A brain picks a bounded action + confidence (heuristic or Gemini)
+4. PREDICT      Commit to a FALSIFIABLE forecast band      (a control limit learned from healthy data)
                 BEFORE acting
-5. GATE         Enforce blast-radius + reversibility     (Warrant safety kernel)
-6. ACT          Execute the bounded remediation          (sandbox control API)
-7. VERIFY       Compare live metric vs. forecast band    (read-back)
-8. DECIDE       In-band  -> resolve
-                Out-of-band -> "I was wrong" -> escalate + corrective rollback
-                then LEDGER the outcome -> update the per-action-class trust score
+5. GATE         Reversible + in-blast-radius, and act      (the safety kernel + the license)
+                autonomously only with a valid LICENSE
+6. ACT          Execute the bounded remediation            (sandbox control API)
+7. VERIFY       Compare live metric vs. forecast band      (read-back)
+8. LEDGER       Record the graded outcome (correct?,       (certification)
+                confidence, brain fingerprint) -> re-certify the license
 ```
 
-**The trust gate:** an action class runs fully autonomously only while its ledger hit-rate
-stays at or above a threshold. Below it, Warrant drops to human-in-the-loop and asks. It
-*graduates* from supervised to autonomous by earning it, action class by action class.
+## What makes a license
+
+| Condition       | Why it matters |
+| --------------- | -------------- |
+| **Confidence**  | Wilson score lower bound on the hit-rate ≥ threshold — one lucky pass can't license an action |
+| **Evidence**    | A minimum number of graded outcomes behind it |
+| **Calibration** | Brier score ≤ limit — a confidently-wrong agent fails even with a good hit-rate |
+| **Fingerprint** | Pinned to the brain (model id + prompt version) — a change forces re-certification |
 
 ## Why each Splunk building block is load-bearing
 
-| Splunk capability        | Role in Warrant                                              |
-| ------------------------ | ----------------------------------------------------------- |
-| **MCP Server**           | The agent's eyes + verification — every SENSE/VERIFY runs through it |
-| **Cisco Deep Time Series** | Generates the falsifiable forecast band (PREDICT)         |
-| **Foundation-sec**       | Security-track root-cause reasoning (HYPOTHESIZE)           |
-| **AI Assistant (saia_*)**| Natural-language SPL generation for ad-hoc investigation    |
+| Splunk capability        | Role in Warrant                                                        |
+| ------------------------ | --------------------------------------------------------------------- |
+| **MCP Server (client)**  | The agent's eyes — the CONTEXT step runs `splunk_run_query` over `_internal` |
+| **AI Assistant (saia_*)**| Hosted-model SPL authoring (`saia_generate_spl`) for the context query |
+| **Warrant as an MCP server** | Exposes the trust gate (`warrant_request_action`, …) so *any* agent — SOAR, Splunk's Triage/Guided-Response agents — can be licensed over MCP |
+| **SPL-native ledger**    | `splunk/trust_ledger.spl` recomputes the Wilson + Brier licensing math as a saved search |
 
 ## Repo layout
 
 ```
 warrant/
-  sandbox/      Toy microservice "flight simulator": fault injection + control API
-  warrant/      The control loop: sense, hypothesize, predict, gate, act, verify, ledger
-  splunk/       MCP client, SPL queries, dashboard + saved searches
-  docs/         Architecture diagram, demo script
-  SETUP.md      Step-by-step Splunk account + MCP install + connectivity test
-  README.md     You are here
+  sandbox/      Parameterised microservice "flight simulator": severities + 3 reversible controls
+  warrant/      loop · proving_ground · certification · ledger · brain · splunk_mcp · mcp_server · dashboard
+  splunk/       SPL trust-ledger saved search
+  web/          Static replay of the dashboard (hosted on Vercel)
+  docs/         Architecture diagram, demo script, Devpost write-up
+  SETUP.md      Splunk account + MCP install + connectivity test
 ```
 
-## Architecture
-
-Warrant runs a **hybrid** topology: a sandbox "flight simulator" holds the live telemetry
-(a system you can deliberately break), and **Splunk Cloud is the reasoning brain**, reached
-entirely through the **Splunk MCP Server**. See [`docs/architecture.md`](docs/architecture.md)
-for the full diagram and data flow.
-
-## Run the demo
+## Run it
 
 Prerequisites: Python 3.11+, a Splunk Cloud account with the **Splunk MCP Server** app, and a
-filled-in `.env` (see `SETUP.md`).
+filled-in `.env` (see `SETUP.md`). The brain defaults to a deterministic heuristic so every run
+is reproducible; set `GEMINI_API_KEY` and drop `WARRANT_BRAIN` to let **Gemini** drive diagnosis.
 
 ```powershell
 # 1. install
@@ -79,37 +92,29 @@ python -m warrant.check_connection
 # 3. start the sandbox (terminal A)
 python -m uvicorn sandbox.app:app --port 9000
 
-# 4a. run the agent in the console (terminal B)
-python -m warrant.demo
+# 4a. the full four-act story in the console (terminal B)
+$env:WARRANT_BRAIN="heuristic"; python -m warrant.demo
 
-# 4b. ...or open the live dashboard (terminal B), then browse http://localhost:8050
-python -m uvicorn warrant.dashboard:app --port 8050
+# 4b. ...or the live dashboard (terminal B), then browse http://localhost:8050
+$env:WARRANT_BRAIN="heuristic"; python -m uvicorn warrant.dashboard:app --port 8050
+
+# 4c. ...or prove the MCP gate: an external agent earns, uses, and loses autonomy over MCP
+python -m warrant.mcp_demo
 ```
-
-The demo runs six incidents: five connection-leak incidents the agent diagnoses correctly —
-**earning autonomy** only once its Wilson-confidence track record clears the bar — then a
-**decoy** where the obvious fix is wrong. Acting autonomously, the agent's prediction fails,
-it detects its own error, escalates, self-corrects, and its trust score **drops back to
-human-in-the-loop**.
-
-### Optional: the LLM agent brain
-Set `GEMINI_API_KEY` in `.env` (free key from Google AI Studio) to have **Gemini** drive the
-diagnosis. The model only *proposes* a bounded action — Warrant still gates, predicts,
-verifies, and ledgers every decision. Without a key, it falls back to a local heuristic, so
-the demo always runs.
 
 ## Status
 
 - ✅ Splunk MCP Server connectivity (live SPL round-trip over `_internal`)
-- ✅ Sandbox flight-simulator (fault injection + reversible control API)
-- ✅ **LLM agent brain** (Gemini) proposing bounded remediations, heuristic fallback
-- ✅ Full control loop: sense → context → hypothesize → predict → gate → act → verify → decide
+- ✅ **Proving ground** — manufactured, graded exams build a real track record in seconds
+- ✅ **Per-action-class licenses** — Wilson confidence + Brier calibration + lifecycle
+- ✅ **Drift detection** — licenses pinned to a brain fingerprint; re-certify on change
+- ✅ **Warrant MCP server** — the trust gate, callable by any external agent (`warrant.mcp_demo`)
+- ✅ **Pluggable brain** — deterministic heuristic or Gemini; identical safety harness either way
 - ✅ **Statistical forecast** — a control limit learned from healthy data (not hardcoded)
-- ✅ **Earned trust** — Wilson confidence lower bound + minimum sample size gate autonomy
-- ✅ **Live web dashboard** (`warrant.dashboard`) with trust meter + control-limit chart
-- ✅ End-to-end demo narrative (console and dashboard)
-- ◻️ AI Assistant `saia_*` hosted-model tools are integrated but require backend activation
-  on the Splunk tenant; the CONTEXT step falls back to a direct MCP query over `_internal`.
+- ✅ **Live web dashboard** — proving ground · license registry · control-limit chart · drift
+- ✅ SPL-native trust ledger (`splunk/trust_ledger.spl`) for a HEC-enabled tenant
+- ◻️ AI Assistant `saia_*` hosted-model tools are integrated but require backend activation on
+  the Splunk tenant; the CONTEXT step falls back to a direct MCP query over `_internal`.
 
 ## License
 
