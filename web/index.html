@@ -192,12 +192,12 @@
       <b>ships its own MCP server</b>, so the trust gate becomes infrastructure any agent in the
       ecosystem can call: a SOAR playbook, Splunk&rsquo;s own triage agents, a Claude agent.
     </p>
-    <div class="plate"><span class="c"># any external agent, over MCP:</span>
-&gt; warrant_request_action(action_class=<span class="y">"restart_service"</span>, agent_fingerprint=<span class="y">"gemini-2.5-flash:v3"</span>)
-<span class="g">{ "decision": "ALLOW", "license": "LICENSED", "wilson_lower_bound": 0.57 }</span>
+    <div class="plate"><span class="c"># any external agent, over MCP — licenses are pinned to the caller's fingerprint:</span>
+&gt; warrant_request_action(action_class=<span class="y">"restart_connection_pool"</span>, agent_fingerprint=<span class="y">"gemini-2.5-flash:v3"</span>)
+<span class="g">{ "verdict": "ALLOW", "license": { "status": "LICENSED", "confidence": 0.61 } }</span>
 
 &gt; warrant_request_action(action_class=<span class="y">"rollback_deploy"</span>, agent_fingerprint=<span class="y">"gemini-2.5-flash:v3"</span>)
-<span class="r">{ "decision": "REQUIRE_APPROVAL", "license": "SUSPENDED", "reason": "prediction violated in production" }</span></div>
+<span class="r">{ "verdict": "REQUIRE_APPROVAL", "license": { "status": "SUSPENDED", "strikes": 1 } }</span></div>
     <p class="next"><a href="how-it-works.html#mcp">Every Splunk touchpoint, and the full tool reference &rarr;</a></p>
   </div>
 </section>

@@ -54,6 +54,13 @@ when a production prediction is violated, and is **invalidated** when the agent'
 | **Evidence**    | A minimum number of graded outcomes behind it |
 | **Calibration** | Brier score ≤ limit — a confidently-wrong agent fails even with a good hit-rate |
 | **Fingerprint** | Pinned to the brain (model id + prompt version) — a change forces re-certification |
+| **Probation**   | Each *production* failure under the current brain raises the evidence bar (`+2` samples per strike) — a suspended agent can't retry exam suites until one gets lucky |
+| **Margin**      | Graduated autonomy: clearing the bar by a thin margin yields **ALLOW_WITH_MONITORING** (act, but page a human); full autonomy needs a comfortable margin |
+
+**The ledger is tamper-evident:** every outcome is sha256-chained to the one before it
+(`Ledger.verify_chain()`, exposed as the `warrant_verify_ledger` MCP tool), and each record is
+labelled by *evidence* — `measured` (Warrant read the metric itself) vs `self-reported` (the
+agent's word) — so an auditor can see exactly how much of a license rests on what.
 
 ## Why each Splunk building block is load-bearing
 
@@ -113,8 +120,32 @@ python -m warrant.mcp_demo
 - ✅ **Statistical forecast** — a control limit learned from healthy data (not hardcoded)
 - ✅ **Live web dashboard** — proving ground · license registry · control-limit chart · drift
 - ✅ SPL-native trust ledger (`splunk/trust_ledger.spl`) for a HEC-enabled tenant
+- ✅ **Per-agent identity over MCP** — licenses are pinned to the caller's `agent_fingerprint`;
+  a different brain cannot spend a license it didn't earn (`warrant.mcp_demo` proves it)
+- ✅ **Trust-but-verify outcomes** — `warrant_report_outcome` accepts a `metric_url` so Warrant
+  measures the outcome itself; self-reported outcomes are permanently flagged as such
+- ✅ **Tamper-evident ledger** — sha256 hash chain + `warrant_verify_ledger` audit tool
+- ✅ **Probation** — production failures raise the evidence bar for re-licensing
+- ✅ **Graduated autonomy** — thin-margin licenses are ALLOW_WITH_MONITORING, not full autonomy
+- ✅ **Late-regression guard** — optional second verification one horizon later
+  (`LoopParams.recheck`) so a fix that fails slowly is graded as a MISS
 - ◻️ AI Assistant `saia_*` hosted-model tools are integrated but require backend activation on
   the Splunk tenant; the CONTEXT step falls back to a direct MCP query over `_internal`.
+
+## Limitations & roadmap
+
+Warrant is honest about what a demo can and cannot prove — these are the known edges:
+
+| Limitation | Status / mitigation |
+| ---------- | ------------------- |
+| "Production" is a sandbox flight-simulator | By design for a hackathon — you don't test a fire alarm by burning a building. The architecture is unchanged against real infrastructure. |
+| Exams come from the same generator the agent later faces | Severity/noise are parameterised so no two exams are identical; a real deployment needs a richer scenario library. |
+| Exam outcomes are correlated, not i.i.d. | The Wilson bound is therefore optimistic about effective sample size; thresholds are configurable and conservative. |
+| Human approval is simulated by default | The loop logs it as **simulated** and exposes `LoopParams.approve` for a real approval queue. |
+| Verification reads one metric over a fixed horizon | `LoopParams.recheck` adds a second, later reading; multi-signal verification is roadmap. |
+| The local JSON ledger is hash-chained but file-writable | Tamper-*evident*, not tamper-*proof*. The SPL ledger (`splunk/trust_ledger.spl`) is the production answer: the registry lives in Splunk. |
+| Self-reported MCP outcomes can lie | Mitigated: measured mode (`metric_url`) lets Warrant grade outcomes itself, and every record is labelled `measured` vs `self-reported` for audit. |
+| Thresholds (0.5 Wilson, 4 samples) are demo-scaled | Real certification wants hundreds of graded outcomes; all knobs are env-configurable. |
 
 ## License
 

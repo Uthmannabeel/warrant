@@ -209,6 +209,17 @@
         reported.</div>
       </details>
       <details>
+        <summary>Can&rsquo;t an agent just lie about its outcomes to farm a license?</summary>
+        <div class="a">Three defences. <b>Trust-but-verify:</b> over MCP, the agent passes a
+        <span class="mono">metric_url</span> and Warrant fetches the metric <b>itself</b> and
+        grades the outcome — the caller never touches the verdict. If an outcome arrives as bare
+        word, it&rsquo;s permanently flagged <span class="mono">self-reported</span> in the ledger,
+        visible to any auditor. <b>Identity:</b> licenses are pinned to the calling agent&rsquo;s
+        fingerprint — a different brain asking for the same action is refused until it earns its
+        own record. <b>Tamper-evidence:</b> the ledger is a sha256 hash chain
+        (<span class="mono">warrant_verify_ledger</span>); editing history breaks the chain.</div>
+      </details>
+      <details>
         <summary>Is the demo real or staged?</summary>
         <div class="a">The control loop, proving ground, certification math, MCP round-trips and
         fault-injection sandbox are all real, running code — <a

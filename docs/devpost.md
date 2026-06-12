@@ -45,6 +45,15 @@ decides if it was right. Licenses are **revoked** when a production prediction i
 **invalidated** when the agent's brain changes (a new model id or prompt), because the agent you
 trusted last night may not be the agent running this morning.
 
+And because a licensing authority must itself be trustworthy, the registry is hardened the way
+an auditor would demand: licenses are pinned to a **per-agent fingerprint** (a different brain
+cannot spend a license it didn't earn), outcomes reported over MCP are **trust-but-verify**
+(pass a `metric_url` and Warrant measures the result *itself*; an agent's bare word is
+permanently flagged `self-reported`), the ledger is a **tamper-evident sha256 hash chain** with
+an audit tool, production failures put an action class on **probation** (each strike raises the
+evidence bar for re-licensing, so you can't retry exams until one gets lucky), and autonomy is
+**graduated** — a thin statistical margin earns `ALLOW_WITH_MONITORING`, not free rein.
+
 The whole story is one screen and four buttons:
 
 - **① Proving ground** — the agent sits ~15 manufactured incidents in seconds and earns a
@@ -64,7 +73,7 @@ The whole story is one screen and four buttons:
   `saia_ask_splunk_question`). The agent is decoupled from Splunk internals and speaks only MCP.
 - **Warrant *as* an MCP server.** Warrant exposes its trust gate as MCP tools
   (`warrant_request_action`, `warrant_check_license`, `warrant_report_outcome`,
-  `warrant_list_licenses`). Any external agent — a SOAR playbook, Splunk's own Triage / Guided
+  `warrant_list_licenses`, `warrant_verify_ledger`). Any external agent — a SOAR playbook, Splunk's own Triage / Guided
   Response agents, a bespoke Claude agent — can ask Warrant *"am I allowed to do this?"* and get
   a verdict grounded in that action's real, calibration-checked track record. We ship a working
   proof (`warrant.mcp_demo`) where an independent agent earns, uses, and loses autonomy purely

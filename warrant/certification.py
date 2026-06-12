@@ -86,6 +86,8 @@ class License:
     fingerprint: str            # brain fingerprint this license reflects
     drifted: bool               # brain changed since the track record was built
     reason: str                 # why the agent holds this status, in one line
+    monitoring: bool = False    # LICENSED but margin over threshold is thin -> act WITH monitoring
+    strikes: int = 0            # production failures under the current brain -> probation
 
     @property
     def autonomous(self) -> bool:
@@ -121,9 +123,24 @@ def certify(ledger: Ledger, action_class: str, current_fingerprint: str | None =
     earned_fp = next((r.fingerprint for r in reversed(records) if r.fingerprint), "")
     drifted = bool(current_fingerprint and earned_fp and current_fingerprint != earned_fp)
 
+    # Probation: every PRODUCTION failure under the brain currently in force raises the
+    # evidence bar. A suspended agent cannot retry exam suites until one gets lucky — each
+    # strike demands a longer clean record. A NEW brain (different fingerprint) starts with a
+    # clean slate, because the strikes belonged to the brain that earned them.
+    strikes = sum(
+        1 for r in records
+        if not r.correct and r.kind == "production"
+        and (not current_fingerprint or r.fingerprint == current_fingerprint)
+    )
+    required_samples = config.autonomy_min_samples + config.probation_extra * strikes
+
     meets_conf = conf >= config.autonomy_threshold
-    meets_evidence = n >= config.autonomy_min_samples
+    meets_evidence = n >= required_samples
     meets_calib = brier is not None and brier <= config.calibration_max
+
+    # Graduated autonomy: clearing the bar by a thin margin licenses the action WITH
+    # monitoring (act, but page a human); full autonomy needs a comfortable margin.
+    monitoring = meets_conf and (conf < config.autonomy_threshold + config.monitoring_margin)
 
     if drifted:
         status = PROVISIONAL
@@ -132,7 +149,10 @@ def certify(ledger: Ledger, action_class: str, current_fingerprint: str | None =
     elif meets_conf and meets_evidence and meets_calib:
         status = LICENSED
         reason = (f"confidence {conf:.2f} >= {config.autonomy_threshold:.2f} over {n} graded "
-                  f"outcomes, calibration {calibration_grade(brier)} - cleared to act autonomously")
+                  f"outcomes, calibration {calibration_grade(brier)} - cleared to act autonomously"
+                  + (" [thin margin -> enhanced monitoring]" if monitoring else "")
+                  + (f" [probation: {strikes} strike(s), evidence bar {required_samples}]"
+                     if strikes else ""))
     elif _ever_licensed(records):
         status = SUSPENDED
         if not meets_calib:
@@ -144,7 +164,9 @@ def certify(ledger: Ledger, action_class: str, current_fingerprint: str | None =
         if n == 0:
             reason = "no track record yet - must pass the proving ground"
         elif not meets_evidence:
-            reason = f"only {n} graded outcome(s); needs >= {config.autonomy_min_samples} - still in training"
+            reason = (f"only {n} graded outcome(s); needs >= {required_samples}"
+                      + (f" (probation: {strikes} production strike(s))" if strikes else "")
+                      + " - still in training")
         elif not meets_conf:
             reason = f"confidence {conf:.2f} below {config.autonomy_threshold:.2f} - still in training"
         else:
@@ -155,6 +177,7 @@ def certify(ledger: Ledger, action_class: str, current_fingerprint: str | None =
         samples=n, exams=exams, production=production, brier=brier,
         calibration=calibration_grade(brier), fingerprint=earned_fp or (current_fingerprint or ""),
         drifted=drifted, reason=reason,
+        monitoring=(status == LICENSED and monitoring), strikes=strikes,
     )
 
 

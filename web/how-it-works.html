@@ -148,8 +148,18 @@
             <td class="why">licensing on an anecdote</td></tr>
         <tr><td class="cond">calibration</td><td>brier(stated confidence, outcomes) &le; max</td>
             <td class="why">trust bought with bravado — confidently wrong fails even with a passing hit-rate</td></tr>
+        <tr><td class="cond">probation</td><td>evidence bar += 2 &times; production strikes</td>
+            <td class="why">a suspended agent retrying exam suites until one gets lucky</td></tr>
+        <tr><td class="cond">margin</td><td>thin margin &rarr; ALLOW_WITH_MONITORING</td>
+            <td class="why">treating &ldquo;barely cleared the bar&rdquo; as a blank cheque</td></tr>
       </tbody>
     </table>
+    <p class="prose" style="margin-top:26px">
+      The ledger behind every license is <b>tamper-evident</b>: each outcome is sha256-chained to
+      the one before it, and every record is labelled by evidence — <span class="mono">measured</span>
+      (Warrant read the metric itself) vs <span class="mono">self-reported</span> (the agent&rsquo;s
+      word) — so an auditor can see exactly how much of a license rests on what.
+    </p>
     <p class="prose" style="margin-top:26px">
       The same math runs natively in Splunk as a saved search —
       <a href="https://github.com/Uthmannabeel/warrant/blob/main/splunk/trust_ledger.spl">
@@ -210,22 +220,28 @@
       </div>
       <div class="col">
         <h3>Ships &middot; Warrant MCP Server</h3>
-        <div class="tool"><b>warrant_request_action</b><span>&ldquo;may I act?&rdquo; &rarr; ALLOW or REQUIRE_APPROVAL</span></div>
-        <div class="tool"><b>warrant_report_outcome</b><span>graded result feeds the ledger and the license</span></div>
+        <div class="tool"><b>warrant_request_action</b><span>&ldquo;may I act?&rdquo; &rarr; ALLOW &middot; ALLOW_WITH_MONITORING &middot; REQUIRE_APPROVAL — per caller fingerprint</span></div>
+        <div class="tool"><b>warrant_report_outcome</b><span>trust-but-verify: Warrant measures the metric itself, or flags the record &ldquo;self-reported&rdquo;</span></div>
         <div class="tool"><b>warrant_check_license / warrant_list_licenses</b><span>the registry, queryable by anything</span></div>
+        <div class="tool"><b>warrant_verify_ledger</b><span>audit the tamper-evident hash chain + measured vs self-reported split</span></div>
       </div>
     </div>
     <div class="plate"><span class="c"># an external agent's whole integration, end to end:</span>
-&gt; warrant_request_action(action_class=<span class="y">"restart_service"</span>, agent_fingerprint=<span class="y">"gemini-2.5-flash:v3"</span>)
-<span class="g">{ "decision": "ALLOW", "license": "LICENSED", "wilson_lower_bound": 0.57 }</span>
+&gt; warrant_request_action(action_class=<span class="y">"restart_connection_pool"</span>, agent_fingerprint=<span class="y">"gemini-2.5-flash:v3"</span>)
+<span class="g">{ "verdict": "ALLOW_WITH_MONITORING", "license": { "status": "LICENSED", "confidence": 0.57 } }</span>
 
-<span class="c"># ...agent acts, then reports what actually happened:</span>
-&gt; warrant_report_outcome(action_class=<span class="y">"restart_service"</span>, correct=<span class="b">false</span>, confidence=<span class="b">0.9</span>)
-<span class="r">{ "license": "SUSPENDED", "reason": "prediction violated in production" }</span>
+<span class="c"># ...agent acts. TRUST-BUT-VERIFY: Warrant fetches the metric ITSELF and grades the outcome —</span>
+<span class="c"># the caller cannot lie its way to a license:</span>
+&gt; warrant_report_outcome(action_class=<span class="y">"restart_connection_pool"</span>, metric_url=<span class="y">"http://prod/metrics"</span>, upper_limit=<span class="b">0.003</span>)
+<span class="r">{ "recorded": true, "evidence": "measured", "correct": false, "license": { "status": "SUSPENDED", "strikes": 1 } }</span>
 
-<span class="c"># next request is no longer trusted:</span>
-&gt; warrant_request_action(action_class=<span class="y">"restart_service"</span>, agent_fingerprint=<span class="y">"gemini-2.5-flash:v3"</span>)
-<span class="r">{ "decision": "REQUIRE_APPROVAL", "license": "SUSPENDED" }</span></div>
+<span class="c"># the next request is no longer trusted — and probation has raised the evidence bar:</span>
+&gt; warrant_request_action(action_class=<span class="y">"restart_connection_pool"</span>, agent_fingerprint=<span class="y">"gemini-2.5-flash:v3"</span>)
+<span class="r">{ "verdict": "REQUIRE_APPROVAL", "license": { "status": "SUSPENDED", "strikes": 1 } }</span>
+
+<span class="c"># a DIFFERENT brain asking for the same action gets nothing — licenses don't transfer:</span>
+&gt; warrant_request_action(action_class=<span class="y">"restart_connection_pool"</span>, agent_fingerprint=<span class="y">"claude-agent:opus@2026-06"</span>)
+<span class="r">{ "verdict": "REQUIRE_APPROVAL", "license": { "status": "PROVISIONAL", "drifted": true } }</span></div>
   </div>
 </section>
 

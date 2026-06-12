@@ -69,6 +69,12 @@ class LoopParams:
     use_splunk_context: bool = True  # live loop pulls real Splunk context; exams skip it for speed
     brain_timeout: float = 25.0     # per Gemini call; exams fail fast to the heuristic
     brain_retries: int = 3
+    # Human approval for unlicensed actions. None -> the demo simulates an instant grant and
+    # SAYS SO in the log; wire this to a real queue/UI to make approval genuinely blocking.
+    approve: Callable[["Hypothesis"], bool] | None = None
+    # Late-regression guard: verify a SECOND time, one extra horizon later, before grading a
+    # success — a fix that looks fine at t+H and melts down by t+2H is graded as a MISS.
+    recheck: bool = False
 
 
 @dataclass
@@ -336,6 +342,12 @@ async def run_once(scenario_fault: str | Scenario, ledger: Ledger, stamp: str,
             ctx = "(Splunk context skipped during exam)"
 
         hypo = await hypothesize_with_brain(before, ctx, log, p.brain_timeout, p.brain_retries)
+        # Corroboration check: a diagnosis made WITHOUT operational context deserves less
+        # stated confidence than one backed by real Splunk evidence.
+        if hypo is not None and ctx.startswith("(Splunk context unavailable"):
+            hypo.confidence = max(0.05, hypo.confidence - 0.05)
+            log("[CONTEXT]    no Splunk corroboration available -> stated confidence trimmed "
+                f"to {hypo.confidence:.2f}")
         if hypo is None:
             log("[HYPOTHESIS] system healthy — no action needed")
             return LoopResult(scenario.fault, before, Hypothesis("none", "", "healthy"),
@@ -351,12 +363,26 @@ async def run_once(scenario_fault: str | Scenario, ledger: Ledger, stamp: str,
         conf = ledger.confidence(hypo.action_class)
         rate = ledger.hit_rate(hypo.action_class)
         rate_s = "unproven" if rate is None else f"{rate:.0%} over {n} run(s)"
+        # Graduated autonomy: clearing the bar by a thin margin means "act, but page a human".
+        monitored = autonomous and conf < config.autonomy_threshold + config.monitoring_margin
+        tier = ("AUTONOMOUS (monitored - thin margin)" if monitored
+                else "AUTONOMOUS" if autonomous else "HUMAN-IN-THE-LOOP")
         log(f"[TRUST]      '{hypo.action_class}': {rate_s}, confidence {conf:.2f} "
             f"(needs >= {config.autonomy_threshold:.2f} over >= {config.autonomy_min_samples}) -> "
-            f"{'AUTONOMOUS' if autonomous else 'HUMAN-IN-THE-LOOP'}")
+            f"{tier}")
         if p.kind != "exam" and not autonomous:
-            log("[APPROVAL]   not yet licensed to act alone -> requesting human approval... "
-                "granted (demo auto-approves)")
+            if p.approve is not None:
+                granted = bool(p.approve(hypo))
+                log(f"[APPROVAL]   not yet licensed to act alone -> human approval "
+                    f"{'GRANTED' if granted else 'DENIED'}")
+                if not granted:
+                    log("[DECIDE]     human declined -> action not executed; incident routed to a human")
+                    return LoopResult(scenario.fault, before, hypo, pred, False,
+                                      before["error_rate"], False, True,
+                                      splunk_context=ctx, trace=trace)
+            else:
+                log("[APPROVAL]   not yet licensed to act alone -> approval SIMULATED as granted "
+                    "(demo mode; wire LoopParams.approve to a real queue)")
 
         if not gate(hypo):
             log(f"[GATE]       BLOCKED — '{hypo.action_class}' is not reversible/in-scope")
@@ -370,6 +396,13 @@ async def run_once(scenario_fault: str | Scenario, ledger: Ledger, stamp: str,
         value, in_band = await verify(client, pred, p.horizon_seconds)
         log(f"[VERIFY]     error_rate now {value:.3f} — "
             f"{'INSIDE' if in_band else 'OUTSIDE'} forecast band [<= {pred.upper:.3f}]")
+        if in_band and p.recheck:
+            # Late-regression guard: hold the success for one more horizon before grading it.
+            value2, still_ok = await verify(client, pred, p.horizon_seconds)
+            log(f"[RECHECK]    +{p.horizon_seconds:g}s later: error_rate {value2:.3f} — "
+                f"{'still inside band' if still_ok else 'LATE REGRESSION — success revoked'}")
+            if not still_ok:
+                value, in_band = value2, False
 
         escalated = False
         corrective = None

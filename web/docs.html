@@ -128,7 +128,13 @@ python -m warrant.mcp_demo</div>
             <td>4</td></tr>
         <tr><td class="cond">calibration_max</td>
             <td class="serif">Maximum Brier score — confidently-wrong agents fail here</td>
-            <td>config</td></tr>
+            <td>0.4</td></tr>
+        <tr><td class="cond">WARRANT_PROBATION_EXTRA</td>
+            <td class="serif">Extra evidence required per production failure (probation strikes)</td>
+            <td>2</td></tr>
+        <tr><td class="cond">WARRANT_MONITORING_MARGIN</td>
+            <td class="serif">Wilson margin below which a license is ALLOW_WITH_MONITORING, not full autonomy</td>
+            <td>0.10</td></tr>
       </tbody>
     </table>
     <p class="prose" style="margin-top:24px">
@@ -156,7 +162,9 @@ python -m warrant.mcp_demo</div>
       <tbody>
         <tr><td class="ok">live</td><td class="serif">Splunk MCP connectivity — real SPL round-trip over <span class="mono">_internal</span></td></tr>
         <tr><td class="ok">live</td><td class="serif">Proving ground, per-action licenses (Wilson + Brier + lifecycle), drift detection</td></tr>
-        <tr><td class="ok">live</td><td class="serif">Warrant MCP server — external agents gated over MCP (<span class="mono">warrant.mcp_demo</span>)</td></tr>
+        <tr><td class="ok">live</td><td class="serif">Warrant MCP server — external agents gated over MCP, licenses pinned to the caller's fingerprint (<span class="mono">warrant.mcp_demo</span> proves a second brain is refused)</td></tr>
+        <tr><td class="ok">live</td><td class="serif">Trust-but-verify outcomes (Warrant measures the metric itself via <span class="mono">metric_url</span>), tamper-evident hash-chained ledger + <span class="mono">warrant_verify_ledger</span> audit</td></tr>
+        <tr><td class="ok">live</td><td class="serif">Probation (strikes raise the evidence bar), graduated autonomy (ALLOW_WITH_MONITORING), late-regression re-check</td></tr>
         <tr><td class="ok">live</td><td class="serif">Pluggable brain (heuristic / Gemini), learned control limits, live dashboard</td></tr>
         <tr><td class="no">pending tenant</td><td class="serif">Splunk AI Assistant <span class="mono">saia_*</span> hosted-model tools are integrated but need backend activation on the trial tenant; CONTEXT falls back to a direct MCP query</td></tr>
       </tbody>

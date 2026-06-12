@@ -6,6 +6,7 @@ at/above the configured threshold. This is the heart of "earning the right to ac
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 from dataclasses import asdict, dataclass
@@ -43,6 +44,19 @@ class Outcome:
     kind: str = "production"   # "exam" (proving ground) or "production" (live system)
     fingerprint: str = ""      # brain fingerprint at decision time -> drift detection
     note: str = ""
+    evidence: str = "measured" # "measured" (Warrant read the metric itself) or "self-reported"
+    prev_hash: str = ""        # tamper-evidence: hash of the previous record in the chain
+    hash: str = ""             # tamper-evidence: sha256 over (prev_hash + this record's content)
+
+
+def _canonical(record_dict: dict) -> str:
+    """A stable, canonical serialisation of an outcome (excluding the chain fields)."""
+    core = {k: v for k, v in record_dict.items() if k not in ("prev_hash", "hash")}
+    return json.dumps(core, sort_keys=True, separators=(",", ":"))
+
+
+def _chain_hash(prev_hash: str, record_dict: dict) -> str:
+    return hashlib.sha256((prev_hash + _canonical(record_dict)).encode("utf-8")).hexdigest()
 
 
 class Ledger:
@@ -62,8 +76,28 @@ class Ledger:
         )
 
     def record(self, outcome: Outcome) -> None:
+        # Tamper-evidence: every record is hash-chained to the one before it, so a quietly
+        # edited track record no longer verifies. (A licensing authority must be auditable.)
+        outcome.prev_hash = self._records[-1].hash if self._records else ""
+        outcome.hash = _chain_hash(outcome.prev_hash, asdict(outcome))
         self._records.append(outcome)
         self._save()
+
+    def verify_chain(self) -> tuple[bool, int | None]:
+        """Walk the hash chain. Returns (intact, index_of_first_bad_record).
+
+        Records written before chaining existed (no hash) are tolerated as 'legacy'; the chain
+        restarts at the next hashed record.
+        """
+        prev = ""
+        for i, r in enumerate(self._records):
+            if not r.hash:          # legacy, pre-chain record
+                prev = ""
+                continue
+            if r.prev_hash != prev or r.hash != _chain_hash(r.prev_hash, asdict(r)):
+                return False, i
+            prev = r.hash
+        return True, None
 
     def records(self, action_class: str | None = None) -> list[Outcome]:
         """All recorded outcomes, optionally filtered to one action class (chronological)."""
