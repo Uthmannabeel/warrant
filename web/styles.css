@@ -2,14 +2,37 @@
    WARRANT design system — “the official document”
    paper · serif display · mono ledger · rubber stamps
    ———————————————————————————————————————————————— */
-:root{
+:root,[data-theme="light"]{
+  color-scheme:light;
   --paper:#f6f2e9; --paper2:#efe9dc; --card:#fbf8f1;
   --ink:#181510; --ink2:#4a443a; --faint:#8a8270;
   --rule:#d8d0bf; --rule2:#c4bba6;
   --green:#1c6e46; --red:#a33327; --amber:#9a6b1a; --blue:#1f4e8c;
+  /* semantic surfaces that must NOT simply invert */
+  --plate-bg:#181510; --plate-ink:#e9e2d2;
+  --footer-bg:#181510; --footer-ink:#b9b09a; --footer-link:#e9e2d2; --footer-rule:#5a5346;
+  --hover-tint:rgba(24,21,16,.05); --hl-bg:rgba(28,110,70,.07);
+  --shadow-btn:rgba(24,21,16,.22); --shadow-btn-h:rgba(24,21,16,.25);
+  --shadow-card:rgba(24,21,16,.13); --shadow-plate:rgba(24,21,16,.15);
+  --stamp-blend:multiply;
   --serif:Georgia,'Times New Roman',ui-serif,serif;
   --mono:ui-monospace,Consolas,'Cascadia Mono',Menlo,monospace;
 }
+[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#14120d; --paper2:#1b1812; --card:#1c1912;
+  --ink:#ece5d6; --ink2:#b3aa98; --faint:#867e6c;
+  --rule:#322d22; --rule2:#473f31;
+  --green:#5cc18c; --red:#e2897b; --amber:#d8ab5c; --blue:#7fb0e8;
+  --plate-bg:#0d0b07; --plate-ink:#e9e2d2;
+  --footer-bg:#0d0b07; --footer-ink:#9c9484; --footer-link:#e9e2d2; --footer-rule:#3a352a;
+  --hover-tint:rgba(255,255,255,.06); --hl-bg:rgba(92,193,140,.12);
+  --shadow-btn:rgba(0,0,0,.55); --shadow-btn-h:rgba(0,0,0,.62);
+  --shadow-card:rgba(0,0,0,.5); --shadow-plate:rgba(0,0,0,.5);
+  --stamp-blend:screen;
+}
+html{transition:background-color .25s ease}
+body{transition:background-color .25s ease,color .25s ease}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;background:var(--paper);color:var(--ink);
@@ -35,6 +58,14 @@ nav{display:flex;gap:20px;font-family:var(--mono);font-size:12px;letter-spacing:
 nav a{text-decoration:none;border-bottom:2px solid transparent;padding-bottom:2px}
 nav a:hover{border-bottom-color:var(--rule2)}
 nav a.active{border-bottom-color:var(--green);color:var(--green);font-weight:700}
+.themetoggle{background:none;border:1.5px solid var(--rule2);border-radius:6px;cursor:pointer;
+             font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--ink2);
+             padding:5px 10px;line-height:1;display:inline-flex;align-items:center;gap:6px;
+             transition:border-color .15s,color .15s}
+.themetoggle:hover{border-color:var(--ink);color:var(--ink)}
+.themetoggle .ico{font-size:12px}
+.themetoggle .lbl-d,[data-theme="dark"] .themetoggle .lbl-l{display:inline}
+.themetoggle .lbl-l,[data-theme="dark"] .themetoggle .lbl-d{display:none}
 
 /* ————— heroes ————— */
 .hero{border-bottom:1px solid var(--rule);overflow:hidden}
@@ -57,15 +88,15 @@ nav a.active{border-bottom-color:var(--green);color:var(--green);font-weight:700
 .btn{display:inline-block;font-family:var(--mono);font-size:13.5px;font-weight:700;letter-spacing:.04em;
      padding:13px 22px;border:2px solid var(--ink);text-decoration:none;background:var(--ink);
      color:var(--paper);transition:transform .12s,box-shadow .12s;
-     box-shadow:4px 4px 0 rgba(24,21,16,.22)}
-.btn:hover{transform:translate(-1px,-1px);box-shadow:6px 6px 0 rgba(24,21,16,.25)}
+     box-shadow:4px 4px 0 var(--shadow-btn)}
+.btn:hover{transform:translate(-1px,-1px);box-shadow:6px 6px 0 var(--shadow-btn-h)}
 .btn.ghost{background:transparent;color:var(--ink);box-shadow:none}
-.btn.ghost:hover{background:rgba(24,21,16,.05);transform:none}
+.btn.ghost:hover{background:var(--hover-tint);transform:none}
 
 /* ————— certificates + stamps ————— */
 .certs{position:relative;min-height:380px}
 .cert{position:absolute;width:min(380px,100%);background:var(--card);border:1.5px solid var(--ink);
-      padding:22px 24px 20px;box-shadow:7px 8px 0 rgba(24,21,16,.13)}
+      padding:22px 24px 20px;box-shadow:7px 8px 0 var(--shadow-card)}
 .cert::before{content:"";position:absolute;inset:5px;border:1px solid var(--rule2);pointer-events:none}
 .cert.front{top:34px;left:0;z-index:2;transform:rotate(-1.2deg)}
 .cert.back{top:0;right:0;z-index:1;transform:rotate(2deg);opacity:.92}
@@ -78,7 +109,7 @@ nav a.active{border-bottom-color:var(--green);color:var(--green);font-weight:700
 .cert .clause{font-size:12.5px;font-style:italic;color:var(--ink2);margin-top:14px;line-height:1.5}
 .stamp{position:absolute;font-family:var(--mono);font-weight:800;letter-spacing:.18em;
        border:3px double currentColor;padding:6px 14px;font-size:15px;text-transform:uppercase;
-       transform:rotate(-9deg);opacity:0;mix-blend-mode:multiply;border-radius:3px}
+       transform:rotate(-9deg);opacity:0;mix-blend-mode:var(--stamp-blend);border-radius:3px}
 .stamp.green{color:var(--green)} .stamp.red{color:var(--red)} .stamp.amber{color:var(--amber)}
 .cert .stamp{right:14px;bottom:48px}
 .stamp.in{animation:thud .38s cubic-bezier(.2,1.6,.4,1) forwards}
@@ -117,7 +148,7 @@ h3.sub{font-size:21px;margin:40px 0 12px}
 .ledger .cond{font-weight:700}
 .ledger .why{font-family:var(--serif);font-size:14.5px;color:var(--ink2);font-style:italic}
 .ledger .serif{font-family:var(--serif);font-size:14.5px;color:var(--ink2)}
-.ledger tr.hl td{background:rgba(28,110,70,.07);border-bottom:2px solid var(--green)}
+.ledger tr.hl td{background:var(--hl-bg);border-bottom:2px solid var(--green)}
 .ledger .ok{color:var(--green);font-weight:700} .ledger .no{color:var(--red)}
 
 /* ————— pillars ————— */
@@ -141,9 +172,9 @@ h3.sub{font-size:21px;margin:40px 0 12px}
            border:1px dashed var(--red);display:inline-block;padding:10px 16px}
 
 /* ————— code plates ————— */
-.plate{background:var(--ink);color:#e9e2d2;font-family:var(--mono);font-size:13px;line-height:1.75;
-       padding:24px 26px;margin-top:30px;overflow-x:auto;box-shadow:6px 6px 0 rgba(24,21,16,.15);
-       white-space:pre}
+.plate{background:var(--plate-bg);color:var(--plate-ink);font-family:var(--mono);font-size:13px;line-height:1.75;
+       padding:24px 26px;margin-top:30px;overflow-x:auto;box-shadow:6px 6px 0 var(--shadow-plate);
+       white-space:pre;border:1px solid var(--rule)}
 .plate .c{color:#8a8270}.plate .g{color:#7fd4a8}.plate .r{color:#ee9c8d}.plate .y{color:#e8c87a}
 .plate .b{color:#9fc1ee}
 
@@ -207,11 +238,11 @@ h3.sub{font-size:21px;margin:40px 0 12px}
 .closing .doc{padding-top:84px;padding-bottom:84px}
 .closing h2{font-size:clamp(28px,4vw,44px);line-height:1.15;margin:0 0 14px;letter-spacing:-.01em}
 .closing p{color:var(--ink2);font-size:17px;margin:0 0 34px}
-footer{background:var(--ink);color:#b9b09a}
+footer{background:var(--footer-bg);color:var(--footer-ink)}
 footer .doc{display:flex;justify-content:space-between;gap:18px;padding-top:26px;padding-bottom:26px;
             flex-wrap:wrap;font-family:var(--mono);font-size:12px}
-footer a{color:#e9e2d2;text-decoration-color:#5a5346}
-footer a:hover{text-decoration-color:#e9e2d2}
+footer a{color:var(--footer-link);text-decoration-color:var(--footer-rule)}
+footer a:hover{text-decoration-color:var(--footer-link)}
 
 /* ————— reveal ————— */
 .rv{opacity:0;transform:translateY(14px);transition:opacity .5s ease,transform .5s ease}

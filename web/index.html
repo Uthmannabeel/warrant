@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#f6f2e9" media="(prefers-color-scheme: light)"/>
+<meta name="theme-color" content="#14120d" media="(prefers-color-scheme: dark)"/>
+<script>(function(){try{var t=localStorage.getItem('warrant-theme');if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();function toggleTheme(){var el=document.documentElement,t=el.getAttribute('data-theme')==='dark'?'light':'dark';el.setAttribute('data-theme',t);try{localStorage.setItem('warrant-theme',t);}catch(e){}}</script>
 <title>Warrant — the licensing authority for AI agents</title>
 <meta name="description" content="Evals tell you how smart an agent is. Warrant tells production how much rope to give it — and takes the rope back. Revocable, per-action licenses for AI agents, earned in a proving ground and graded by reality."/>
 <meta property="og:title" content="Warrant — the licensing authority for AI agents"/>
@@ -24,6 +27,7 @@
       <a href="demo.html">Demo</a>
       <a href="docs.html">Docs</a>
       <a href="https://github.com/Uthmannabeel/warrant">GitHub</a>
+      <button class="themetoggle" type="button" onclick="toggleTheme()" aria-label="Toggle light or dark theme"><span class="lbl-d"><span class="ico">&#9790;</span> Dark</span><span class="lbl-l"><span class="ico">&#9788;</span> Light</span></button>
     </nav>
   </div>
 </div>
