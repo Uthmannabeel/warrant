@@ -21,11 +21,12 @@
 [data-theme="dark"]{
   color-scheme:dark;
   --paper:#14120d; --paper2:#1b1812; --card:#1c1912;
-  --ink:#ece5d6; --ink2:#b3aa98; --faint:#867e6c;
+  /* brighter, cleaner text so body copy reads crisp on the dark paper (not muddy/dull) */
+  --ink:#f3ede0; --ink2:#d8cfbb; --faint:#a89e88;
   --rule:#322d22; --rule2:#473f31;
-  --green:#5cc18c; --red:#e2897b; --amber:#d8ab5c; --blue:#7fb0e8;
+  --green:#63cf95; --red:#ef9587; --amber:#e2b566; --blue:#8fbcf0;
   --plate-bg:#0d0b07; --plate-ink:#e9e2d2;
-  --footer-bg:#0d0b07; --footer-ink:#9c9484; --footer-link:#e9e2d2; --footer-rule:#3a352a;
+  --footer-bg:#0d0b07; --footer-ink:#b7af9c; --footer-link:#f1eadc; --footer-rule:#3a352a;
   --hover-tint:rgba(255,255,255,.06); --hl-bg:rgba(92,193,140,.12);
   --shadow-btn:rgba(0,0,0,.55); --shadow-btn-h:rgba(0,0,0,.62);
   --shadow-card:rgba(0,0,0,.5); --shadow-plate:rgba(0,0,0,.5);
