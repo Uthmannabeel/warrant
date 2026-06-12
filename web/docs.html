@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Docs — run Warrant locally in two terminals</title>
+<meta name="description" content="Quickstart: clone, install, start the sandbox, and watch an agent earn — and lose — its licenses. Plus configuration reference and repo layout."/>
+<meta property="og:title" content="Warrant docs — run it locally"/>
+<meta property="og:description" content="Clone, install, start the sandbox, and watch an agent earn — and lose — its licenses."/>
+<meta property="og:url" content="https://warrant-chi.vercel.app/docs.html"/>
+<meta property="og:type" content="website"/>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23f6f2e9'/%3E%3Crect x='7' y='7' width='50' height='50' fill='none' stroke='%231c6e46' stroke-width='5'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='36' font-weight='bold' text-anchor='middle' fill='%231c6e46'%3EW%3C/text%3E%3C/svg%3E"/>
+<link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+<div class="formbar">
+  <div class="doc">
+    <div class="id"><a href="index.html"><b>WARRANT</b></a> · Licensing authority for AI agents</div>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="why.html">Why Warrant</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="demo.html">Demo</a>
+      <a href="docs.html" class="active">Docs</a>
+      <a href="https://github.com/Uthmannabeel/warrant">GitHub</a>
+    </nav>
+  </div>
+</div>
+
+<div class="pagehero">
+  <div class="doc">
+    <p class="kicker">Documentation</p>
+    <h1>Two terminals. Four acts.<br/><em>Zero</em> leaps of faith.</h1>
+    <p class="lede">
+      Everything below runs on a laptop with Python 3.11+. The brain defaults to a deterministic
+      heuristic so <b>every run is reproducible</b>; add a Gemini key to let an LLM drive
+      diagnosis through the identical safety harness.
+    </p>
+  </div>
+</div>
+
+<!-- quickstart -->
+<section id="quickstart">
+  <div class="doc rv">
+    <div class="clausehead"><span class="num">&sect;1 &middot; QUICKSTART</span>
+      <h2>From clone to revoked license in five minutes.</h2></div>
+
+    <div class="step">
+      <div class="n">1</div>
+      <div class="body">
+        <h3>Install</h3>
+        <p>Clone the repo and install into a virtual environment.</p>
+        <div class="plate">git clone https://github.com/Uthmannabeel/warrant
+cd warrant
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1        <span class="c"># source .venv/bin/activate on macOS/Linux</span>
+pip install -r requirements.txt</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="n">2</div>
+      <div class="body">
+        <h3>Start the sandbox <span class="mono" style="font-size:13px;color:var(--faint)">(terminal A)</span></h3>
+        <p>The microservice flight-simulator: live metrics, parameterised fault injection, three
+        reversible controls. This is the &ldquo;production&rdquo; the agent operates on.</p>
+        <div class="plate">python -m uvicorn sandbox.app:app --port 9000</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="n">3</div>
+      <div class="body">
+        <h3>Run the four-act story <span class="mono" style="font-size:13px;color:var(--faint)">(terminal B — pick one)</span></h3>
+        <p>The CLI narrative, the live dashboard, or the MCP gating proof — all three run the
+        same control loop.</p>
+        <div class="plate"><span class="c"># a) the full four-act story in the console</span>
+$env:WARRANT_BRAIN="heuristic"; python -m warrant.demo
+
+<span class="c"># b) ...or the live dashboard -> http://localhost:8050</span>
+$env:WARRANT_BRAIN="heuristic"; python -m uvicorn warrant.dashboard:app --port 8050
+
+<span class="c"># c) ...or prove the MCP gate: an external agent earns, uses and loses autonomy over MCP</span>
+python -m warrant.mcp_demo</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="n">4</div>
+      <div class="body">
+        <h3>Optional: connect Splunk &amp; an LLM brain</h3>
+        <p>With a Splunk Cloud account running the <b>Splunk MCP Server</b> app (see
+        <a href="https://github.com/Uthmannabeel/warrant/blob/main/SETUP.md"><span class="mono">SETUP.md</span></a>),
+        the CONTEXT step pulls real SPL results over MCP. Verify connectivity first:</p>
+        <div class="plate">python -m warrant.check_connection   <span class="c"># live SPL round-trip through the Splunk MCP Server</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- configuration -->
+<section id="config">
+  <div class="doc rv">
+    <div class="clausehead"><span class="num">&sect;2 &middot; CONFIGURATION</span>
+      <h2>One <span class="mono" style="font-size:.8em">.env</span>, sane defaults.</h2></div>
+    <table class="ledger">
+      <thead><tr><th>variable</th><th>purpose</th><th>default</th></tr></thead>
+      <tbody>
+        <tr><td class="cond">WARRANT_BRAIN</td>
+            <td class="serif">Which brain diagnoses: <span class="mono">heuristic</span> (deterministic, reproducible) or Gemini</td>
+            <td>heuristic</td></tr>
+        <tr><td class="cond">GEMINI_API_KEY</td>
+            <td class="serif">Lets Google Gemini drive diagnosis — same harness, fallible brain</td>
+            <td>unset</td></tr>
+        <tr><td class="cond">SPLUNK_MCP_URL / SPLUNK_MCP_TOKEN</td>
+            <td class="serif">Splunk MCP Server endpoint + encrypted token (audience <span class="mono">mcp</span>)</td>
+            <td>see SETUP.md</td></tr>
+        <tr><td class="cond">autonomy_threshold</td>
+            <td class="serif">Wilson lower bound a license must clear</td>
+            <td>0.50</td></tr>
+        <tr><td class="cond">autonomy_min_samples</td>
+            <td class="serif">Minimum graded outcomes before licensing</td>
+            <td>4</td></tr>
+        <tr><td class="cond">calibration_max</td>
+            <td class="serif">Maximum Brier score — confidently-wrong agents fail here</td>
+            <td>config</td></tr>
+      </tbody>
+    </table>
+    <p class="prose" style="margin-top:24px">
+      If Gemini is unreachable the loop falls back to the heuristic automatically — <b>the demo
+      never breaks</b>, and either brain runs through the identical gate/predict/verify/ledger
+      harness. That symmetry is the point: Warrant treats every brain as fallible.
+    </p>
+  </div>
+</section>
+
+<!-- repo layout -->
+<section id="layout">
+  <div class="doc rv">
+    <div class="clausehead"><span class="num">&sect;3 &middot; WHAT&rsquo;S IN THE BOX</span>
+      <h2>Small repo, no magic.</h2></div>
+    <div class="plate">warrant/
+  sandbox/      <span class="c">microservice "flight simulator": parameterised faults + 3 reversible controls</span>
+  warrant/      <span class="c">loop · proving_ground · certification · ledger · brain · splunk_mcp · mcp_server · dashboard</span>
+  splunk/       <span class="c">trust_ledger.spl — the Wilson + Brier licensing math as a native SPL saved search</span>
+  web/          <span class="c">this site + the captured demo replay (static, no backend)</span>
+  docs/         <span class="c">architecture · demo script · Devpost write-up</span>
+  SETUP.md      <span class="c">Splunk account + MCP install + connectivity test</span></div>
+    <table class="ledger" style="margin-top:34px">
+      <thead><tr><th>status</th><th>component</th></tr></thead>
+      <tbody>
+        <tr><td class="ok">live</td><td class="serif">Splunk MCP connectivity — real SPL round-trip over <span class="mono">_internal</span></td></tr>
+        <tr><td class="ok">live</td><td class="serif">Proving ground, per-action licenses (Wilson + Brier + lifecycle), drift detection</td></tr>
+        <tr><td class="ok">live</td><td class="serif">Warrant MCP server — external agents gated over MCP (<span class="mono">warrant.mcp_demo</span>)</td></tr>
+        <tr><td class="ok">live</td><td class="serif">Pluggable brain (heuristic / Gemini), learned control limits, live dashboard</td></tr>
+        <tr><td class="no">pending tenant</td><td class="serif">Splunk AI Assistant <span class="mono">saia_*</span> hosted-model tools are integrated but need backend activation on the trial tenant; CONTEXT falls back to a direct MCP query</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="closing">
+  <div class="doc rv">
+    <h2>Read the code. Run the loop.<br/>Try to fool it.</h2>
+    <p>MIT licensed. The decoy in Act II is waiting for you.</p>
+    <div class="ctas" style="justify-content:center">
+      <a class="btn" href="https://github.com/Uthmannabeel/warrant">github.com/Uthmannabeel/warrant</a>
+      <a class="btn ghost" href="demo.html">&#9654;&nbsp; Or just watch the demo</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="doc">
+    <span>WARRANT &middot; MIT License &middot; 2026</span>
+    <span>
+      <a href="index.html">home</a> &nbsp;&middot;&nbsp;
+      <a href="why.html">why</a> &nbsp;&middot;&nbsp;
+      <a href="how-it-works.html">how it works</a> &nbsp;&middot;&nbsp;
+      <a href="demo.html">demo</a> &nbsp;&middot;&nbsp;
+      <a href="https://github.com/Uthmannabeel/warrant">source</a>
+    </span>
+  </div>
+</footer>
+
+<script>
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting){e.target.classList.add('vis');io.unobserve(e.target)}}),{threshold:.12});
+document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>

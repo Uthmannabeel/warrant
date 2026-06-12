@@ -5,190 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Warrant — the licensing authority for AI agents</title>
 <meta name="description" content="Evals tell you how smart an agent is. Warrant tells production how much rope to give it — and takes the rope back. Revocable, per-action licenses for AI agents, earned in a proving ground and graded by reality."/>
-<style>
-  /* ————— design system: the official document ————— */
-  :root{
-    --paper:#f6f2e9; --paper2:#efe9dc; --ink:#181510; --ink2:#4a443a; --faint:#8a8270;
-    --rule:#d8d0bf; --rule2:#c4bba6;
-    --green:#1c6e46; --red:#a33327; --amber:#9a6b1a; --blue:#1f4e8c;
-    --serif:Georgia,'Times New Roman',ui-serif,serif;
-    --mono:ui-monospace,Consolas,'Cascadia Mono',Menlo,monospace;
-  }
-  *{box-sizing:border-box}
-  html{scroll-behavior:smooth}
-  body{margin:0;background:var(--paper);color:var(--ink);
-       font:16px/1.65 var(--serif);
-       -webkit-font-smoothing:antialiased}
-  ::selection{background:#1c6e46;color:#f6f2e9}
-
-  a{color:var(--ink);text-decoration:underline;text-decoration-color:var(--rule2);
-    text-underline-offset:3px;transition:text-decoration-color .15s}
-  a:hover{text-decoration-color:var(--ink)}
-
-  .mono{font-family:var(--mono)}
-  .doc{max-width:1020px;margin:0 auto;padding:0 28px}
-
-  /* ————— form-header strip ————— */
-  .formbar{border-bottom:2px solid var(--ink);background:var(--paper)}
-  .formbar .doc{display:flex;justify-content:space-between;align-items:center;gap:16px;
-                padding-top:14px;padding-bottom:14px;flex-wrap:wrap}
-  .formbar .id{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--ink2);text-transform:uppercase}
-  .formbar .id b{color:var(--ink);font-weight:700}
-  nav{display:flex;gap:22px;font-family:var(--mono);font-size:12px;letter-spacing:.06em}
-  nav a{text-decoration:none;border-bottom:1px solid transparent}
-  nav a:hover{border-bottom-color:var(--ink)}
-
-  /* ————— hero ————— */
-  .hero{border-bottom:1px solid var(--rule);position:relative;overflow:hidden}
-  .hero .doc{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;
-             padding-top:84px;padding-bottom:84px}
-  .hero h1{font-size:clamp(40px,5.6vw,64px);line-height:1.04;margin:0 0 22px;font-weight:700;
-           letter-spacing:-.015em}
-  .hero h1 em{font-style:italic;color:var(--green)}
-  .hero .lede{font-size:18.5px;line-height:1.6;color:var(--ink2);max-width:34em;margin:0 0 14px}
-  .hero .lede b{color:var(--ink)}
-  .kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;
-          color:var(--green);margin:0 0 18px;font-weight:700}
-  .ctas{display:flex;gap:14px;margin-top:30px;flex-wrap:wrap;align-items:center}
-  .btn{display:inline-block;font-family:var(--mono);font-size:13.5px;font-weight:700;letter-spacing:.04em;
-       padding:13px 22px;border:2px solid var(--ink);text-decoration:none;background:var(--ink);color:var(--paper);
-       transition:transform .12s, box-shadow .12s; box-shadow:4px 4px 0 rgba(24,21,16,.22)}
-  .btn:hover{transform:translate(-1px,-1px);box-shadow:6px 6px 0 rgba(24,21,16,.25)}
-  .btn.ghost{background:transparent;color:var(--ink);box-shadow:none}
-  .btn.ghost:hover{background:rgba(24,21,16,.05);transform:none}
-
-  /* ————— certificate cards ————— */
-  .certs{position:relative;min-height:380px}
-  .cert{position:absolute;width:min(380px,100%);background:#fbf8f1;border:1.5px solid var(--ink);
-        padding:22px 24px 20px;box-shadow:7px 8px 0 rgba(24,21,16,.13)}
-  .cert::before{content:"";position:absolute;inset:5px;border:1px solid var(--rule2);pointer-events:none}
-  .cert.front{top:34px;left:0;z-index:2;transform:rotate(-1.2deg)}
-  .cert.back{top:0;right:0;z-index:1;transform:rotate(2deg);opacity:.92}
-  .cert .ctitle{font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;
-                color:var(--ink2);text-align:center;margin-bottom:4px}
-  .cert .cno{font-family:var(--mono);font-size:10px;text-align:center;color:var(--faint);margin-bottom:14px}
-  .cert .field{display:flex;justify-content:space-between;gap:12px;font-family:var(--mono);font-size:12px;
-               padding:6px 0;border-bottom:1px dotted var(--rule2)}
-  .cert .field .k{color:var(--faint)} .cert .field .v{font-weight:700;text-align:right}
-  .cert .clause{font-size:12.5px;font-style:italic;color:var(--ink2);margin-top:14px;line-height:1.5}
-
-  .stamp{position:absolute;font-family:var(--mono);font-weight:800;letter-spacing:.18em;
-         border:3px double currentColor;padding:6px 14px;font-size:15px;text-transform:uppercase;
-         transform:rotate(-9deg);opacity:0;mix-blend-mode:multiply;border-radius:3px}
-  .stamp.green{color:var(--green)} .stamp.red{color:var(--red)} .stamp.amber{color:var(--amber)}
-  .cert .stamp{right:14px;bottom:48px}
-  .stamp.in{animation:thud .38s cubic-bezier(.2,1.6,.4,1) forwards}
-  @keyframes thud{
-    0%{opacity:0;transform:rotate(-9deg) scale(2.1)}
-    65%{opacity:.95;transform:rotate(-9deg) scale(.96)}
-    100%{opacity:.9;transform:rotate(-9deg) scale(1)}
-  }
-
-  /* ————— sections as numbered clauses ————— */
-  section{border-bottom:1px solid var(--rule)}
-  section .doc{padding-top:72px;padding-bottom:72px}
-  .clausehead{display:flex;align-items:baseline;gap:18px;margin-bottom:28px}
-  .clausehead .num{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.18em;
-                   color:var(--green);white-space:nowrap}
-  .clausehead h2{font-size:clamp(26px,3.4vw,38px);margin:0;line-height:1.12;letter-spacing:-.01em}
-  .prose{font-size:17.5px;line-height:1.7;color:var(--ink2);max-width:42em}
-  .prose b,.prose strong{color:var(--ink)}
-  .pull{font-size:clamp(20px,2.6vw,27px);line-height:1.45;font-style:italic;max-width:30em;
-        border-left:3px solid var(--green);padding-left:22px;margin:34px 0 0;color:var(--ink)}
-
-  /* three-condition table */
-  .ledger{width:100%;border-collapse:collapse;margin-top:34px;font-family:var(--mono);font-size:13px}
-  .ledger th{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);
-             text-align:left;font-weight:700;padding:0 14px 10px;border-bottom:2px solid var(--ink)}
-  .ledger td{padding:14px;border-bottom:1px solid var(--rule);vertical-align:top}
-  .ledger td:first-child,.ledger th:first-child{padding-left:0}
-  .ledger .cond{font-weight:700}
-  .ledger .why{font-family:var(--serif);font-size:14.5px;color:var(--ink2);font-style:italic}
-
-  /* pillars */
-  .pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:42px;
-           border-top:2px solid var(--ink)}
-  .pillar{padding:26px 26px 30px;border-left:1px solid var(--rule)}
-  .pillar:first-child{border-left:none;padding-left:0}
-  .pillar .pnum{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--green);
-                font-weight:700;text-transform:uppercase}
-  .pillar h3{font-size:21px;margin:10px 0 12px;line-height:1.25}
-  .pillar p{font-size:14.8px;line-height:1.62;color:var(--ink2);margin:0}
-
-  /* lifecycle strip */
-  .cycle{display:flex;align-items:center;gap:0;margin-top:44px;flex-wrap:wrap;font-family:var(--mono)}
-  .state{border:2px solid currentColor;padding:10px 18px;font-size:13px;font-weight:800;letter-spacing:.14em}
-  .state.p{color:var(--amber)} .state.l{color:var(--green)} .state.s{color:var(--red)}
-  .arrow{padding:0 14px;color:var(--faint);font-size:13px;white-space:nowrap}
-  .arrow small{display:block;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;text-align:center}
-  .driftnote{margin-top:22px;font-family:var(--mono);font-size:12.5px;color:var(--red);
-             border:1px dashed var(--red);display:inline-block;padding:10px 16px}
-
-  /* code plate */
-  .plate{background:var(--ink);color:#e9e2d2;font-family:var(--mono);font-size:13px;line-height:1.75;
-         padding:24px 26px;margin-top:36px;overflow-x:auto;box-shadow:6px 6px 0 rgba(24,21,16,.15)}
-  .plate .c{color:#8a8270} .plate .g{color:#7fd4a8} .plate .r{color:#ee9c8d} .plate .y{color:#e8c87a}
-
-  /* acts */
-  .acts{counter-reset:act;margin-top:40px;border-top:2px solid var(--ink)}
-  .act{display:grid;grid-template-columns:64px 240px 1fr;gap:20px;padding:24px 0;
-       border-bottom:1px solid var(--rule);align-items:baseline}
-  .act .anum{font-family:var(--mono);font-size:26px;font-weight:800;color:var(--green)}
-  .act h3{font-size:19px;margin:0;line-height:1.3}
-  .act p{margin:0;font-size:15px;line-height:1.62;color:var(--ink2)}
-  .act .verdict{font-family:var(--mono);font-size:11px;font-weight:800;letter-spacing:.14em;
-                text-transform:uppercase;display:inline-block;margin-top:8px;padding:3px 9px;border:1.5px solid}
-  .v-ok{color:var(--green)} .v-bad{color:var(--red)} .v-warn{color:var(--amber)}
-
-  /* splunk two-column */
-  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-top:38px}
-  .col h3{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;
-          margin:0 0 16px;padding-bottom:10px;border-bottom:2px solid var(--ink)}
-  .tool{font-family:var(--mono);font-size:13px;padding:9px 0;border-bottom:1px dotted var(--rule2)}
-  .tool b{font-weight:700}
-  .tool span{display:block;font-family:var(--serif);font-size:13.5px;font-style:italic;color:var(--ink2)}
-
-  /* closing + footer */
-  .closing{text-align:center}
-  .closing .doc{padding-top:88px;padding-bottom:88px}
-  .closing h2{font-size:clamp(28px,4vw,44px);line-height:1.15;margin:0 0 14px;letter-spacing:-.01em}
-  .closing p{color:var(--ink2);font-size:17px;margin:0 0 34px}
-  footer{background:var(--ink);color:#b9b09a}
-  footer .doc{display:flex;justify-content:space-between;gap:18px;padding-top:26px;padding-bottom:26px;
-              flex-wrap:wrap;font-family:var(--mono);font-size:12px}
-  footer a{color:#e9e2d2;text-decoration-color:#5a5346}
-  footer a:hover{text-decoration-color:#e9e2d2}
-
-  /* reveal on scroll */
-  .rv{opacity:0;transform:translateY(14px);transition:opacity .5s ease,transform .5s ease}
-  .rv.vis{opacity:1;transform:none}
-
-  @media (max-width:860px){
-    .hero .doc{grid-template-columns:1fr;gap:40px;padding-top:56px;padding-bottom:56px}
-    .certs{min-height:0;height:auto}
-    .cert{position:relative;width:100%}
-    .cert.front{top:0;transform:rotate(-.8deg)}
-    .cert.back{display:none}
-    .pillars{grid-template-columns:1fr}
-    .pillar{border-left:none;padding-left:0;border-top:1px solid var(--rule)}
-    .pillar:first-child{border-top:none}
-    .act{grid-template-columns:48px 1fr;grid-template-rows:auto auto}
-    .act p{grid-column:2}
-    .twocol{grid-template-columns:1fr}
-    section .doc{padding-top:52px;padding-bottom:52px}
-  }
-</style>
+<meta property="og:title" content="Warrant — the licensing authority for AI agents"/>
+<meta property="og:description" content="Don't trust your agent. License it. Agents earn revocable, per-action licenses by making falsifiable predictions and being graded by reality."/>
+<meta property="og:url" content="https://warrant-chi.vercel.app/"/>
+<meta property="og:type" content="website"/>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23f6f2e9'/%3E%3Crect x='7' y='7' width='50' height='50' fill='none' stroke='%231c6e46' stroke-width='5'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='36' font-weight='bold' text-anchor='middle' fill='%231c6e46'%3EW%3C/text%3E%3C/svg%3E"/>
+<link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
 
-<!-- form header -->
 <div class="formbar">
   <div class="doc">
-    <div class="id"><b>WARRANT</b> · Form W-1 · Licensing authority for AI agents</div>
+    <div class="id"><a href="index.html"><b>WARRANT</b></a> · Licensing authority for AI agents</div>
     <nav>
-      <a href="#how">How it works</a>
-      <a href="#demo">The demo</a>
-      <a href="#splunk">Splunk</a>
+      <a href="index.html" class="active">Home</a>
+      <a href="why.html">Why Warrant</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="demo.html">Demo</a>
+      <a href="docs.html">Docs</a>
       <a href="https://github.com/Uthmannabeel/warrant">GitHub</a>
     </nav>
   </div>
@@ -207,7 +41,7 @@
       </p>
       <div class="ctas">
         <a class="btn" href="demo.html">&#9654;&nbsp; Watch it earn one &mdash; and lose it</a>
-        <a class="btn ghost" href="https://github.com/Uthmannabeel/warrant">View source &rarr;</a>
+        <a class="btn ghost" href="why.html">Why this matters &rarr;</a>
       </div>
     </div>
     <div class="certs" aria-hidden="true">
@@ -236,7 +70,17 @@
   </div>
 </div>
 
-<!-- §1 problem -->
+<!-- trust strip -->
+<div class="strip">
+  <div class="doc">
+    <span><b>&#9670;</b> falsifiable predictions</span>
+    <span><b>&#9670;</b> revocable per-action licenses</span>
+    <span><b>&#9670;</b> drift-aware fingerprints</span>
+    <span><b>&#9670;</b> MCP on both sides of the loop</span>
+  </div>
+</div>
+
+<!-- problem -->
 <section>
   <div class="doc rv">
     <div class="clausehead"><span class="num">&sect;1 &middot; THE PROBLEM</span>
@@ -252,158 +96,105 @@
       A driver&rsquo;s license doesn&rsquo;t certify that you&rsquo;re smart. It certifies you were
       tested on the road you&rsquo;ll actually drive &mdash; and it can be taken away.
     </p>
+    <p class="next"><a href="why.html">Read the full case &mdash; and how Warrant compares to evals, guardrails and human-in-the-loop &rarr;</a></p>
   </div>
 </section>
 
-<!-- §2 how it works -->
-<section id="how">
+<!-- answer -->
+<section>
   <div class="doc rv">
-    <div class="clausehead"><span class="num">&sect;2 &middot; HOW IT WORKS</span>
-      <h2>Trust as paperwork &mdash; in the best possible sense.</h2></div>
+    <div class="clausehead"><span class="num">&sect;2 &middot; THE ANSWER</span>
+      <h2>Autonomy as a license: earned, audited, revocable.</h2></div>
     <p class="prose">
       Warrant sits between any AI agent and the systems it wants to touch. Before every action it
       asks one question: <b>does this brain hold a valid license for this action class?</b>
-      Licenses are earned, audited, and revoked &mdash; automatically.
     </p>
-
     <div class="pillars">
       <div class="pillar">
-        <div class="pnum">2.1 &middot; The Proving Ground</div>
+        <div class="pnum">The Proving Ground</div>
         <h3>Trust starts before production.</h3>
-        <p>Warrant manufactures realistic incidents at varied severity and noise, and runs the
-        agent through accelerated exams. Before each fix the agent must commit to a
-        <b>falsifiable prediction</b> &mdash; a forecast band the metric must return to. Reality
-        grades the exam, not an LLM judge. Fifteen graded outcomes in seconds: no cold start, no
-        anecdotes.</p>
+        <p>Manufactured incidents, accelerated exams. The agent commits to a <b>falsifiable
+        prediction</b> before each fix; reality grades it. Fifteen graded outcomes in seconds —
+        no cold start, no anecdotes.</p>
+        <a href="how-it-works.html#proving-ground">How exams work &rarr;</a>
       </div>
       <div class="pillar">
-        <div class="pnum">2.2 &middot; The License</div>
+        <div class="pnum">The License</div>
         <h3>Three conditions. No exceptions.</h3>
-        <p>A license is granted per action class only when the <b>Wilson lower bound</b> on the
-        hit-rate clears threshold (one lucky pass can never license), there&rsquo;s a <b>minimum
-        body of evidence</b>, and the <b>Brier score</b> shows the agent&rsquo;s confidence matches
-        reality &mdash; an agent that is confidently wrong fails even with a passing hit-rate.</p>
+        <p>A <b>Wilson lower bound</b> that clears threshold, a minimum body of evidence, and
+        <b>Brier-scored calibration</b> — an agent that is confidently wrong fails even with a
+        passing hit-rate.</p>
+        <a href="how-it-works.html#license">The licensing math &rarr;</a>
       </div>
       <div class="pillar">
-        <div class="pnum">2.3 &middot; The Fingerprint</div>
+        <div class="pnum">The Fingerprint</div>
         <h3>Licenses die with the brain that earned them.</h3>
-        <p>Every license is pinned to a fingerprint of the agent&rsquo;s brain &mdash; model ID plus
-        prompt version. Your vendor updates the model overnight? Every license drops to
-        PROVISIONAL before the new brain acts once. <b>Yesterday&rsquo;s track record doesn&rsquo;t
-        transfer to today&rsquo;s model.</b></p>
+        <p>Every license is pinned to model&nbsp;ID + prompt version. Your vendor updates the model
+        overnight? Every license drops to PROVISIONAL before the new brain acts once.</p>
+        <a href="how-it-works.html#drift">Drift detection &rarr;</a>
       </div>
     </div>
-
-    <table class="ledger" aria-label="License conditions">
-      <thead><tr><th>condition</th><th>test</th><th>what it prevents</th></tr></thead>
-      <tbody>
-        <tr><td class="cond">confidence</td><td>wilson_lower_bound(hits, n) &ge; 0.50</td>
-            <td class="why">a lucky streak counting as competence</td></tr>
-        <tr><td class="cond">evidence</td><td>n &ge; min_samples</td>
-            <td class="why">licensing on an anecdote</td></tr>
-        <tr><td class="cond">calibration</td><td>brier(confidence, outcome) &le; max</td>
-            <td class="why">trust bought with bravado</td></tr>
-      </tbody>
-    </table>
   </div>
 </section>
 
-<!-- §3 lifecycle -->
-<section>
-  <div class="doc rv">
-    <div class="clausehead"><span class="num">&sect;3 &middot; THE LIFECYCLE</span>
-      <h2>Every license can be taken away. That&rsquo;s the point.</h2></div>
-    <p class="prose">
-      One violated prediction in production suspends the license on the spot &mdash; the agent
-      rolls back its own action, escalates to a human, and goes back to supervised mode. It can
-      re-earn autonomy the same way it earned it the first time: with evidence.
-    </p>
-    <div class="cycle">
-      <span class="state p">PROVISIONAL</span>
-      <span class="arrow"><small>passes exams</small>&mdash;&mdash;&#9654;</span>
-      <span class="state l">LICENSED</span>
-      <span class="arrow"><small>violates prediction</small>&mdash;&mdash;&#9654;</span>
-      <span class="state s">SUSPENDED</span>
-      <span class="arrow"><small>re-certifies</small>&mdash;&mdash;&#9654;</span>
-      <span class="state p">PROVISIONAL</span>
-    </div>
-    <div class="driftnote">&#9888; fingerprint changed (model/prompt drift) &rarr; ALL licenses revert to PROVISIONAL</div>
-  </div>
-</section>
-
-<!-- §4 demo -->
+<!-- demo -->
 <section id="demo">
   <div class="doc rv">
-    <div class="clausehead"><span class="num">&sect;4 &middot; THE DEMONSTRATION</span>
+    <div class="clausehead"><span class="num">&sect;3 &middot; THE DEMONSTRATION</span>
       <h2>Watch an agent earn autonomy &mdash; then lose it honestly.</h2></div>
     <p class="prose">
-      The demo runs Warrant against a live fault-injection sandbox in four acts. The kill-shot is
-      Act&nbsp;II: a decoy incident fools the agent exactly the way it would fool an engineer &mdash;
-      and <b>its own falsifiable prediction catches the mistake</b>, rolls it back, and suspends
-      the license. Trustworthy <i>when wrong</i> is the property everything else is missing.
+      Four acts against a live fault-injection sandbox. The kill-shot is Act&nbsp;II: a decoy
+      incident fools the agent exactly the way it would fool an engineer &mdash; and <b>its own
+      falsifiable prediction catches the mistake</b>, rolls it back, and suspends the license.
+      Trustworthy <i>when wrong</i> is the property everything else is missing.
     </p>
     <div class="acts">
       <div class="act"><span class="anum">I</span>
         <div><h3>The Proving Ground</h3><span class="verdict v-ok">3 classes licensed</span></div>
-        <p>Fifteen manufactured incidents across three action classes. The agent commits to a
-        forecast band before each fix; reality grades it. Wilson bounds climb until the registry
-        shows three LICENSED stamps.</p>
+        <p>Fifteen manufactured incidents across three action classes. Wilson bounds climb until
+        the registry shows three LICENSED stamps.</p>
       </div>
       <div class="act"><span class="anum">II</span>
         <div><h3>Production &mdash; and the decoy</h3><span class="verdict v-bad">license suspended</span></div>
-        <p>Licensed and acting alone, the agent resolves real incidents &mdash; until a decoy fault
-        mimics a familiar signature. Its fix doesn&rsquo;t bring the metric back inside the band it
-        predicted. It declares itself wrong, rolls back, escalates, and loses the license.</p>
+        <p>Acting alone, the agent resolves real incidents &mdash; until a decoy mimics a familiar
+        signature. Its fix misses the band it predicted. It declares itself wrong, rolls back,
+        escalates, and loses the license.</p>
       </div>
       <div class="act"><span class="anum">III</span>
         <div><h3>The model updates overnight</h3><span class="verdict v-warn">all licenses &rarr; provisional</span></div>
-        <p>The brain&rsquo;s fingerprint changes &mdash; no failure has happened yet. Warrant
-        doesn&rsquo;t wait for one: every license reverts to PROVISIONAL because the thing that
-        earned them no longer exists.</p>
+        <p>The fingerprint changes &mdash; no failure has happened yet. Warrant doesn&rsquo;t wait
+        for one: the track record belonged to a brain that no longer exists.</p>
       </div>
       <div class="act"><span class="anum">IV</span>
         <div><h3>Re-certification</h3><span class="verdict v-ok">autonomy re-earned</span></div>
-        <p>The new brain goes back through the proving ground and re-earns each license under its
-        own fingerprint. Autonomy restored &mdash; with evidence, not a vibe.</p>
+        <p>The new brain re-earns each license under its own fingerprint. Autonomy restored —
+        with evidence, not a vibe.</p>
       </div>
     </div>
     <div class="ctas" style="margin-top:36px">
       <a class="btn" href="demo.html">&#9654;&nbsp; Play the replay (90 seconds)</a>
-      <a class="btn ghost" href="https://github.com/Uthmannabeel/warrant#run-it">Run it live locally &rarr;</a>
+      <a class="btn ghost" href="docs.html">Run it live locally &rarr;</a>
     </div>
   </div>
 </section>
 
-<!-- §5 splunk -->
+<!-- splunk -->
 <section id="splunk">
   <div class="doc rv">
-    <div class="clausehead"><span class="num">&sect;5 &middot; BUILT ON SPLUNK</span>
+    <div class="clausehead"><span class="num">&sect;4 &middot; BUILT ON SPLUNK</span>
       <h2>MCP on both sides of the loop.</h2></div>
     <p class="prose">
       Warrant <b>consumes</b> the Splunk MCP Server for every read of Splunk data &mdash; and
       <b>ships its own MCP server</b>, so the trust gate becomes infrastructure any agent in the
       ecosystem can call: a SOAR playbook, Splunk&rsquo;s own triage agents, a Claude agent.
     </p>
-    <div class="twocol">
-      <div class="col">
-        <h3>Consumes &middot; Splunk MCP Server</h3>
-        <div class="tool"><b>splunk_run_query</b><span>operational context from _internal during diagnosis</span></div>
-        <div class="tool"><b>saia_generate_spl</b><span>hosted-model SPL authoring (AI Assistant)</span></div>
-        <div class="tool"><b>splunk/trust_ledger.spl</b><span>the licensing math &mdash; Wilson + Brier &mdash; as a native SPL saved search</span></div>
-      </div>
-      <div class="col">
-        <h3>Ships &middot; Warrant MCP Server</h3>
-        <div class="tool"><b>warrant_request_action</b><span>&ldquo;may I act?&rdquo; &rarr; ALLOW or REQUIRE_APPROVAL</span></div>
-        <div class="tool"><b>warrant_report_outcome</b><span>graded result feeds the ledger and the license</span></div>
-        <div class="tool"><b>warrant_check_license / warrant_list_licenses</b><span>the registry, queryable by anything</span></div>
-      </div>
-    </div>
     <div class="plate"><span class="c"># any external agent, over MCP:</span>
 &gt; warrant_request_action(action_class=<span class="y">"restart_service"</span>, agent_fingerprint=<span class="y">"gemini-2.5-flash:v3"</span>)
 <span class="g">{ "decision": "ALLOW", "license": "LICENSED", "wilson_lower_bound": 0.57 }</span>
 
 &gt; warrant_request_action(action_class=<span class="y">"rollback_deploy"</span>, agent_fingerprint=<span class="y">"gemini-2.5-flash:v3"</span>)
 <span class="r">{ "decision": "REQUIRE_APPROVAL", "license": "SUSPENDED", "reason": "prediction violated in production" }</span></div>
+    <p class="next"><a href="how-it-works.html#mcp">Every Splunk touchpoint, and the full tool reference &rarr;</a></p>
   </div>
 </section>
 
@@ -423,17 +214,18 @@
   <div class="doc">
     <span>WARRANT &middot; MIT License &middot; 2026</span>
     <span>
-      <a href="demo.html">demo replay</a> &nbsp;&middot;&nbsp;
-      <a href="https://github.com/Uthmannabeel/warrant">source</a> &nbsp;&middot;&nbsp;
-      <a href="https://github.com/Uthmannabeel/warrant/blob/main/architecture_diagram.md">architecture</a>
+      <a href="why.html">why</a> &nbsp;&middot;&nbsp;
+      <a href="how-it-works.html">how it works</a> &nbsp;&middot;&nbsp;
+      <a href="demo.html">demo</a> &nbsp;&middot;&nbsp;
+      <a href="docs.html">docs</a> &nbsp;&middot;&nbsp;
+      <a href="https://github.com/Uthmannabeel/warrant">source</a>
     </span>
   </div>
 </footer>
 
 <script>
-// stamps thud in on load (hero) and on scroll (sections)
-addEventListener('load',()=>{ document.querySelectorAll('[data-stamp]').forEach((s,i)=>{
-  setTimeout(()=>s.classList.add('in'), 500+i*420); });});
+addEventListener('load',()=>{document.querySelectorAll('[data-stamp]').forEach((s,i)=>{
+  setTimeout(()=>s.classList.add('in'),500+i*420)})});
 const io=new IntersectionObserver(es=>es.forEach(e=>{
   if(e.isIntersecting){e.target.classList.add('vis');io.unobserve(e.target)}}),{threshold:.12});
 document.querySelectorAll('.rv').forEach(el=>io.observe(el));

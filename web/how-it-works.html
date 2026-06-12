@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>How Warrant works — the control loop, the proving ground, the license</title>
+<meta name="description" content="The full system: an eight-step control loop with falsifiable predictions, a proving ground that manufactures graded exams, Wilson + Brier licensing math, drift-aware fingerprints, and a trust gate shipped as an MCP server."/>
+<meta property="og:title" content="How Warrant works"/>
+<meta property="og:description" content="An eight-step control loop, a proving ground of graded exams, Wilson + Brier licensing math, and a trust gate shipped as an MCP server."/>
+<meta property="og:url" content="https://warrant-chi.vercel.app/how-it-works.html"/>
+<meta property="og:type" content="website"/>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23f6f2e9'/%3E%3Crect x='7' y='7' width='50' height='50' fill='none' stroke='%231c6e46' stroke-width='5'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='36' font-weight='bold' text-anchor='middle' fill='%231c6e46'%3EW%3C/text%3E%3C/svg%3E"/>
+<link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+<div class="formbar">
+  <div class="doc">
+    <div class="id"><a href="index.html"><b>WARRANT</b></a> · Licensing authority for AI agents</div>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="why.html">Why Warrant</a>
+      <a href="how-it-works.html" class="active">How it works</a>
+      <a href="demo.html">Demo</a>
+      <a href="docs.html">Docs</a>
+      <a href="https://github.com/Uthmannabeel/warrant">GitHub</a>
+    </nav>
+  </div>
+</div>
+
+<div class="pagehero">
+  <div class="doc">
+    <p class="kicker">How it works</p>
+    <h1>The machinery of <em>earned</em> autonomy.</h1>
+    <p class="lede">
+      One control loop, one registry, one rule: <b>no license, no autonomous action.</b> This page
+      walks the whole system — from the proving ground that manufactures evidence to the
+      fingerprint that voids a license the night the model changes.
+    </p>
+  </div>
+</div>
+
+<!-- architecture -->
+<section id="architecture">
+  <div class="doc rv">
+    <div class="clausehead"><span class="num">&sect;1 &middot; ARCHITECTURE</span>
+      <h2>Three planes, joined by MCP.</h2></div>
+    <p class="prose">
+      The <b>sandbox</b> is live telemetry — a microservice flight-simulator you can deliberately
+      break and heal, with parameterised severity. <b>Splunk Cloud</b> is the reasoning context,
+      reached exclusively through the Splunk MCP Server. And Warrant itself is an <b>MCP
+      server</b>, so external agents are gated by the same registry.
+    </p>
+    <div class="diagram">
+      <div class="dgroup">
+        <h4>Local &middot; the agent under test</h4>
+        <div class="dbox">Sandbox flight-simulator<small>FastAPI &middot; fault injection &middot; 3 reversible controls</small></div>
+        <div class="dbox accent">Warrant control loop<small>sense &middot; context &middot; diagnose &middot; predict<br/>gate &middot; act &middot; verify &middot; ledger</small></div>
+        <div class="dbox">Proving Ground<small>manufactured exams, graded vs. prediction</small></div>
+        <div class="dbox accent">Certification registry<small>Wilson &middot; Brier &middot; fingerprint &middot; lifecycle</small></div>
+      </div>
+      <div class="dlink" aria-hidden="true">
+        <span>CONTEXT &rarr;<br/>splunk_run_query</span>
+        <span>&larr; SPL results<br/>+ saia_* hosted models</span>
+        <span>warrant_request_action &rarr;<br/>&larr; ALLOW / REQUIRE_APPROVAL</span>
+      </div>
+      <div class="dgroup">
+        <h4>Splunk Cloud &middot; via MCP server</h4>
+        <div class="dbox">Splunk MCP Server<small>the single interface to Splunk</small></div>
+        <div class="dbox">splunk_run_query<small>SPL over _internal</small></div>
+        <div class="dbox">AI Assistant (saia_*)<small>hosted-model SPL authoring</small></div>
+        <h4 style="margin-top:22px">External &middot; any agent</h4>
+        <div class="dbox">SOAR playbook &middot; Splunk triage agent &middot; Claude agent<small>licensed over Warrant&rsquo;s MCP server</small></div>
+      </div>
+    </div>
+    <p class="dcaption">Also rendered as Mermaid in the repo: <a href="https://github.com/Uthmannabeel/warrant/blob/main/architecture_diagram.md">architecture_diagram.md</a></p>
+  </div>
+</section>
+
+<!-- control loop -->
+<section id="loop">
+  <div class="doc rv">
+    <div class="clausehead"><span class="num">&sect;2 &middot; THE CONTROL LOOP</span>
+      <h2>Eight steps. The prediction comes <em>before</em> the action.</h2></div>
+    <p class="prose">
+      The ordering is the whole trick: by step 4 the agent has committed, in writing, to what the
+      world will look like if it&rsquo;s right. There is nothing to argue about at step 7.
+    </p>
+    <table class="ledger">
+      <thead><tr><th>#</th><th>step</th><th>what happens</th><th>touchpoint</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="cond">SENSE</td><td class="serif">Read live metrics: error_rate, db_connections, p95 latency</td><td>sandbox</td></tr>
+        <tr><td>2</td><td class="cond">CONTEXT</td><td class="serif">Pull real operational context from Splunk</td><td>MCP &middot; splunk_run_query, saia_*</td></tr>
+        <tr><td>3</td><td class="cond">DIAGNOSE</td><td class="serif">A brain proposes one bounded action <b>and a stated confidence</b></td><td>heuristic or Gemini</td></tr>
+        <tr class="hl"><td>4</td><td class="cond">PREDICT</td><td class="serif"><b>Commit to a falsifiable forecast band</b> — a control limit learned from healthy data — before acting</td><td>statistics, not vibes</td></tr>
+        <tr><td>5</td><td class="cond">GATE</td><td class="serif">Reversible + in-blast-radius only; autonomous only with a valid license, else human approval</td><td>certification</td></tr>
+        <tr><td>6</td><td class="cond">ACT</td><td class="serif">Execute the bounded remediation</td><td>sandbox control API</td></tr>
+        <tr><td>7</td><td class="cond">VERIFY</td><td class="serif">Read the live metric back against the committed band</td><td>reality</td></tr>
+        <tr><td>8</td><td class="cond">LEDGER</td><td class="serif">Record the graded outcome — correct?, confidence, fingerprint — and re-evaluate the license</td><td>certification</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- proving ground -->
+<section id="proving-ground">
+  <div class="doc rv">
+    <div class="clausehead"><span class="num">&sect;3 &middot; THE PROVING GROUND</span>
+      <h2>Trust has a cold-start problem. Exams solve it.</h2></div>
+    <p class="prose">
+      An agent can&rsquo;t earn trust without acting, and shouldn&rsquo;t be allowed to act without
+      trust. Worse, real incidents are too rare to certify on — five production successes is an
+      anecdote, not a track record. The proving ground breaks both problems at once:
+    </p>
+    <p class="prose">
+      it <b>manufactures incidents</b> in the sandbox — leak, bad deploy, cache stampede — at
+      <b>parameterised severity and noise</b>, so no two exams are identical, and runs the agent
+      through them as <b>accelerated exams</b>. Each exam is the full control loop: the agent
+      diagnoses, commits to a prediction, acts, and is graded by the metric coming back inside
+      the band — or not. Fifteen graded outcomes land in the ledger in seconds.
+    </p>
+    <p class="pull">
+      Pilots earn licenses in simulators, not by crashing planes.
+      Agents should too.
+    </p>
+  </div>
+</section>
+
+<!-- the license -->
+<section id="license">
+  <div class="doc rv">
+    <div class="clausehead"><span class="num">&sect;4 &middot; THE LICENSE</span>
+      <h2>Three conditions, computed — never felt.</h2></div>
+    <p class="prose">
+      One license per <b>action class</b> (restart_service, rollback_deploy, clear_cache…) —
+      because competence doesn&rsquo;t transfer between actions. All three conditions must hold:
+    </p>
+    <table class="ledger" aria-label="License conditions">
+      <thead><tr><th>condition</th><th>test</th><th>what it prevents</th></tr></thead>
+      <tbody>
+        <tr><td class="cond">confidence</td><td>wilson_lower_bound(hits, n) &ge; threshold</td>
+            <td class="why">a lucky streak counting as competence — 3/3 raw is 100%, but Wilson says you may only claim ~44%</td></tr>
+        <tr><td class="cond">evidence</td><td>n &ge; min_samples</td>
+            <td class="why">licensing on an anecdote</td></tr>
+        <tr><td class="cond">calibration</td><td>brier(stated confidence, outcomes) &le; max</td>
+            <td class="why">trust bought with bravado — confidently wrong fails even with a passing hit-rate</td></tr>
+      </tbody>
+    </table>
+    <p class="prose" style="margin-top:26px">
+      The same math runs natively in Splunk as a saved search —
+      <a href="https://github.com/Uthmannabeel/warrant/blob/main/splunk/trust_ledger.spl">
+      <span class="mono">splunk/trust_ledger.spl</span></a> — so on a HEC-enabled tenant the
+      license registry is a Splunk dashboard.
+    </p>
+  </div>
+</section>
+
+<!-- lifecycle + drift -->
+<section id="drift">
+  <div class="doc rv">
+    <div class="clausehead"><span class="num">&sect;5 &middot; LIFECYCLE &amp; DRIFT</span>
+      <h2>Every license can be taken away. That&rsquo;s the point.</h2></div>
+    <p class="prose">
+      One violated prediction in production suspends the license on the spot — the agent rolls
+      back its own action, escalates with full context, and returns to supervised mode. It
+      re-earns autonomy the same way it earned it the first time: with evidence.
+    </p>
+    <div class="cycle">
+      <span class="state p">PROVISIONAL</span>
+      <span class="arrow"><small>passes exams</small>&mdash;&mdash;&#9654;</span>
+      <span class="state l">LICENSED</span>
+      <span class="arrow"><small>violates prediction</small>&mdash;&mdash;&#9654;</span>
+      <span class="state s">SUSPENDED</span>
+      <span class="arrow"><small>re-certifies</small>&mdash;&mdash;&#9654;</span>
+      <span class="state p">PROVISIONAL</span>
+    </div>
+    <div class="driftnote">&#9888; fingerprint changed (model/prompt drift) &rarr; ALL licenses revert to PROVISIONAL</div>
+    <p class="prose" style="margin-top:30px">
+      The fingerprint is the part nobody else has: every license is pinned to
+      <span class="mono">model_id + prompt_version</span>. When the brain changes — a vendor
+      model update, a prompt tweak, a swap from heuristic to Gemini — the registry notices
+      <b>before the new brain acts once</b>, not after its first incident. A track record belongs
+      to the brain that earned it.
+    </p>
+  </div>
+</section>
+
+<!-- mcp -->
+<section id="mcp">
+  <div class="doc rv">
+    <div class="clausehead"><span class="num">&sect;6 &middot; THE GATE AS INFRASTRUCTURE</span>
+      <h2>Warrant is an MCP server. Any agent can be licensed.</h2></div>
+    <p class="prose">
+      The trust gate isn&rsquo;t a framework you adopt — it&rsquo;s a tool call. Any external
+      agent asks permission before acting and reports the outcome after; the registry does the
+      rest. The repo includes a self-contained proof
+      (<span class="mono">python -m warrant.mcp_demo</span>): an independent agent earns, uses,
+      and loses autonomy purely over MCP.
+    </p>
+    <div class="twocol">
+      <div class="col">
+        <h3>Consumes &middot; Splunk MCP Server</h3>
+        <div class="tool"><b>splunk_run_query</b><span>operational context from _internal during diagnosis</span></div>
+        <div class="tool"><b>saia_generate_spl</b><span>hosted-model SPL authoring (AI Assistant)</span></div>
+        <div class="tool"><b>splunk_get_indexes / metadata</b><span>discovery</span></div>
+      </div>
+      <div class="col">
+        <h3>Ships &middot; Warrant MCP Server</h3>
+        <div class="tool"><b>warrant_request_action</b><span>&ldquo;may I act?&rdquo; &rarr; ALLOW or REQUIRE_APPROVAL</span></div>
+        <div class="tool"><b>warrant_report_outcome</b><span>graded result feeds the ledger and the license</span></div>
+        <div class="tool"><b>warrant_check_license / warrant_list_licenses</b><span>the registry, queryable by anything</span></div>
+      </div>
+    </div>
+    <div class="plate"><span class="c"># an external agent's whole integration, end to end:</span>
+&gt; warrant_request_action(action_class=<span class="y">"restart_service"</span>, agent_fingerprint=<span class="y">"gemini-2.5-flash:v3"</span>)
+<span class="g">{ "decision": "ALLOW", "license": "LICENSED", "wilson_lower_bound": 0.57 }</span>
+
+<span class="c"># ...agent acts, then reports what actually happened:</span>
+&gt; warrant_report_outcome(action_class=<span class="y">"restart_service"</span>, correct=<span class="b">false</span>, confidence=<span class="b">0.9</span>)
+<span class="r">{ "license": "SUSPENDED", "reason": "prediction violated in production" }</span>
+
+<span class="c"># next request is no longer trusted:</span>
+&gt; warrant_request_action(action_class=<span class="y">"restart_service"</span>, agent_fingerprint=<span class="y">"gemini-2.5-flash:v3"</span>)
+<span class="r">{ "decision": "REQUIRE_APPROVAL", "license": "SUSPENDED" }</span></div>
+  </div>
+</section>
+
+<section class="closing">
+  <div class="doc rv">
+    <h2>Now watch it run.</h2>
+    <p>Four acts, ninety seconds — or clone it and run the real thing in two terminals.</p>
+    <div class="ctas" style="justify-content:center">
+      <a class="btn" href="demo.html">&#9654;&nbsp; Watch the demo</a>
+      <a class="btn ghost" href="docs.html">Quickstart &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="doc">
+    <span>WARRANT &middot; MIT License &middot; 2026</span>
+    <span>
+      <a href="index.html">home</a> &nbsp;&middot;&nbsp;
+      <a href="why.html">why</a> &nbsp;&middot;&nbsp;
+      <a href="demo.html">demo</a> &nbsp;&middot;&nbsp;
+      <a href="docs.html">docs</a> &nbsp;&middot;&nbsp;
+      <a href="https://github.com/Uthmannabeel/warrant">source</a>
+    </span>
+  </div>
+</footer>
+
+<script>
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting){e.target.classList.add('vis');io.unobserve(e.target)}}),{threshold:.12});
+document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>

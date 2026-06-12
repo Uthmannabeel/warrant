@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Why Warrant — the missing layer of agentic operations</title>
+<meta name="description" content="Evals measure capability. Guardrails constrain behavior. Human-in-the-loop delays the question. Warrant answers it: when has an agent earned the right to act alone — and when does it lose it?"/>
+<meta property="og:title" content="Why Warrant — the missing layer of agentic operations"/>
+<meta property="og:description" content="Evals, guardrails and human-in-the-loop all dodge the same question: when may the human let go? Warrant answers it with evidence."/>
+<meta property="og:url" content="https://warrant-chi.vercel.app/why.html"/>
+<meta property="og:type" content="website"/>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23f6f2e9'/%3E%3Crect x='7' y='7' width='50' height='50' fill='none' stroke='%231c6e46' stroke-width='5'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='36' font-weight='bold' text-anchor='middle' fill='%231c6e46'%3EW%3C/text%3E%3C/svg%3E"/>
+<link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+<div class="formbar">
+  <div class="doc">
+    <div class="id"><a href="index.html"><b>WARRANT</b></a> · Licensing authority for AI agents</div>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="why.html" class="active">Why Warrant</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="demo.html">Demo</a>
+      <a href="docs.html">Docs</a>
+      <a href="https://github.com/Uthmannabeel/warrant">GitHub</a>
+    </nav>
+  </div>
+</div>
+
+<div class="pagehero">
+  <div class="doc">
+    <p class="kicker">Why Warrant</p>
+    <h1>The whole industry built agents that act.<br/>Nobody built the <em>DMV</em>.</h1>
+    <p class="lede">
+      Every vendor shipping agentic ops today — Splunk included — says the same sentence:
+      <i>&ldquo;human-led, with the analyst in control.&rdquo;</i> It sounds responsible. It also
+      quietly dodges the only question that decides whether any of this scales: <b>when is the
+      human allowed to let go?</b>
+    </p>
+  </div>
+</div>
+
+<!-- the gap -->
+<section>
+  <div class="doc rv">
+    <div class="clausehead"><span class="num">&sect;1 &middot; THE GAP</span>
+      <h2>&ldquo;Human-in-the-loop&rdquo; is a posture, not a policy.</h2></div>
+    <p class="prose">
+      If the human must approve every action forever, you haven&rsquo;t automated operations —
+      you&rsquo;ve added a chatbot to your ticket queue. So in practice, teams <i>do</i> let go.
+      But ask any of them what the graduation criteria were, and you&rsquo;ll get the honest
+      answer: <b>the agent seemed fine for a few weeks.</b>
+    </p>
+    <p class="prose">
+      That intuition has three failure modes, and they&rsquo;re all silent:
+    </p>
+    <table class="ledger">
+      <thead><tr><th>failure mode</th><th>what happens</th></tr></thead>
+      <tbody>
+        <tr><td class="cond">the lucky streak</td>
+            <td class="serif">Five easy incidents in a row look identical to competence. Nobody
+            computed whether five is enough. (It isn&rsquo;t.)</td></tr>
+        <tr><td class="cond">confident nonsense</td>
+            <td class="serif">An agent that announces 95% confidence and is right half the time
+            <i>feels</i> trustworthy right up until it matters.</td></tr>
+        <tr><td class="cond">the silent swap</td>
+            <td class="serif">The model behind the agent gets updated overnight. Every assumption
+            about its behavior is now stale — and nothing in your ops stack noticed.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- comparison -->
+<section>
+  <div class="doc rv">
+    <div class="clausehead"><span class="num">&sect;2 &middot; THE LANDSCAPE</span>
+      <h2>Everything else answers a different question.</h2></div>
+    <p class="prose">
+      Warrant doesn&rsquo;t replace evals, guardrails, or approval flows — it&rsquo;s the layer
+      they all assumed someone else was building.
+    </p>
+    <table class="ledger">
+      <thead><tr><th>layer</th><th>answers</th><th>revocable?</th><th>survives a model update?</th></tr></thead>
+      <tbody>
+        <tr><td class="cond">evals &amp; benchmarks</td>
+            <td class="serif">&ldquo;How capable is this model, offline, once?&rdquo;</td>
+            <td class="no">n/a</td>
+            <td class="serif no">no — the score silently goes stale</td></tr>
+        <tr><td class="cond">guardrails</td>
+            <td class="serif">&ldquo;What must this agent never do?&rdquo;</td>
+            <td class="serif">static rules</td>
+            <td class="serif">the rules survive; trust was never measured</td></tr>
+        <tr><td class="cond">human-in-the-loop</td>
+            <td class="serif">&ldquo;Can a human babysit every action?&rdquo;</td>
+            <td class="no">n/a</td>
+            <td class="serif">yes, because it never trusted anything</td></tr>
+        <tr><td class="cond">SOAR automation</td>
+            <td class="serif">&ldquo;Which runbook fires on this trigger?&rdquo;</td>
+            <td class="serif">manual config</td>
+            <td class="serif">config survives; no notion of a brain at all</td></tr>
+        <tr class="hl"><td class="cond">WARRANT</td>
+            <td class="serif"><b>&ldquo;How much autonomy has this exact brain earned, on this
+            exact action — right now?&rdquo;</b></td>
+            <td class="ok">yes — first violated prediction</td>
+            <td class="ok">licenses void on fingerprint change</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- principles -->
+<section>
+  <div class="doc rv">
+    <div class="clausehead"><span class="num">&sect;3 &middot; THE PRINCIPLES</span>
+      <h2>Four rules, borrowed from a century of licensing humans.</h2></div>
+    <div class="pillars" style="grid-template-columns:repeat(2,1fr)">
+      <div class="pillar">
+        <div class="pnum">I &middot; Falsifiability</div>
+        <h3>Reality is the judge.</h3>
+        <p>Before acting, the agent must state what the world will look like if it&rsquo;s right —
+        a forecast band the metric must return to. Not an LLM grading an LLM: a prediction that
+        can <b>fail</b>. If it fails, the agent was wrong, no matter how good its reasoning
+        sounded.</p>
+      </div>
+      <div class="pillar" style="border-left:1px solid var(--rule);padding-left:26px">
+        <div class="pnum">II &middot; Evidence over vibes</div>
+        <h3>Trust is a statistic, not a feeling.</h3>
+        <p>A Wilson lower bound over enough graded outcomes, plus Brier-scored calibration. One
+        lucky pass can&rsquo;t license an action, and an agent that&rsquo;s confidently wrong
+        fails even with a passing hit-rate.</p>
+      </div>
+      <div class="pillar" style="padding-left:0;border-left:none;border-top:1px solid var(--rule)">
+        <div class="pnum">III &middot; Autonomy is a privilege</div>
+        <h3>Granted narrowly. Revoked instantly.</h3>
+        <p>Licenses are per <b>action class</b>, not per agent — being good at restarting services
+        says nothing about rolling back deploys. One violated prediction in production suspends
+        the license on the spot.</p>
+      </div>
+      <div class="pillar" style="border-top:1px solid var(--rule);border-left:1px solid var(--rule);padding-left:26px">
+        <div class="pnum">IV &middot; Brains change</div>
+        <h3>A track record belongs to the brain that earned it.</h3>
+        <p>Licenses are pinned to a fingerprint: model ID + prompt version. Model updated
+        overnight? Every license reverts to PROVISIONAL — <b>before</b> the new brain acts once,
+        not after its first incident.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section>
+  <div class="doc rv">
+    <div class="clausehead"><span class="num">&sect;4 &middot; QUESTIONS A SKEPTIC SHOULD ASK</span>
+      <h2>Asked and answered.</h2></div>
+    <div class="faq">
+      <details>
+        <summary>Isn&rsquo;t this just another eval framework?</summary>
+        <div class="a">No. Evals measure <b>capability, offline, once</b> — Warrant governs
+        <b>authority, in production, continuously</b>. An eval score can&rsquo;t be revoked when
+        the agent fails on Tuesday, and it doesn&rsquo;t notice when the model behind the agent
+        changes. A license does both. Evals tell you which agent to hire; Warrant decides what
+        it&rsquo;s allowed to touch.</div>
+      </details>
+      <details>
+        <summary>What exactly is a &ldquo;falsifiable prediction&rdquo;?</summary>
+        <div class="a">Before acting, the agent commits to a measurable claim: <i>&ldquo;within
+        90 seconds of my fix, error_rate returns inside the control limit learned from healthy
+        data.&rdquo;</i> After acting, Warrant reads the live metric back. Inside the band &rarr;
+        graded correct. Outside &rarr; the agent was wrong — <b>by its own stated standard</b>,
+        with no room to argue. The grading needs no LLM, no judgment call, no benefit of the
+        doubt.</div>
+      </details>
+      <details>
+        <summary>Real incidents are rare. How do you ever get enough samples?</summary>
+        <div class="a">That&rsquo;s the cold-start paradox — an agent can&rsquo;t earn trust
+        without acting, and shouldn&rsquo;t act without trust. The <b>Proving Ground</b> breaks
+        it: manufactured incidents at varied severity and noise, run as accelerated exams. Fifteen
+        graded outcomes in seconds, before the agent ever touches production. The Wilson bound is
+        then built on a real sample, not five anecdotes.</div>
+      </details>
+      <details>
+        <summary>What happens at the moment the agent is wrong?</summary>
+        <div class="a">The verify step catches the violated prediction, the agent <b>rolls back
+        its own action</b>, escalates to a human with full context, and the license for that
+        action class is <b>SUSPENDED</b> — it&rsquo;s back to human-approved mode until it
+        re-certifies. The demo shows this exact sequence live; it&rsquo;s Act II.</div>
+      </details>
+      <details>
+        <summary>Does my agent have to be built on Warrant to use it?</summary>
+        <div class="a">No — that&rsquo;s the point of shipping Warrant as an <b>MCP server</b>.
+        Any agent that can call a tool calls <span class="mono">warrant_request_action</span>
+        before acting and <span class="mono">warrant_report_outcome</span> after. A SOAR playbook,
+        a Splunk triage agent, a Claude agent — anything. The gate is infrastructure, not a
+        framework you adopt.</div>
+      </details>
+      <details>
+        <summary>Why Wilson lower bound and Brier score, specifically?</summary>
+        <div class="a"><b>Wilson</b>: a raw hit-rate of 3/3 looks like 100%, but the Wilson lower
+        bound says &ldquo;with this little evidence, you can only claim ~44%&rdquo; — so a lucky
+        streak can&rsquo;t cross the threshold. <b>Brier</b>: it scores whether stated confidence
+        matched outcomes, so an agent that says &ldquo;95% sure&rdquo; while being right half the
+        time fails calibration even if its hit-rate passes. Together: enough evidence, honestly
+        reported.</div>
+      </details>
+      <details>
+        <summary>Is the demo real or staged?</summary>
+        <div class="a">The control loop, proving ground, certification math, MCP round-trips and
+        fault-injection sandbox are all real, running code — <a
+        href="https://github.com/Uthmannabeel/warrant">clone it and run the same four acts
+        yourself</a> in two terminals. The hosted replay on this site is a capture of a
+        representative run, so judges don&rsquo;t depend on a localhost.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section class="closing">
+  <div class="doc rv">
+    <h2>See the license get revoked,<br/>live, by the agent&rsquo;s own prediction.</h2>
+    <p>Ninety seconds. Four acts. One honest machine.</p>
+    <div class="ctas" style="justify-content:center">
+      <a class="btn" href="demo.html">&#9654;&nbsp; Watch the demo</a>
+      <a class="btn ghost" href="how-it-works.html">How it works &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="doc">
+    <span>WARRANT &middot; MIT License &middot; 2026</span>
+    <span>
+      <a href="index.html">home</a> &nbsp;&middot;&nbsp;
+      <a href="how-it-works.html">how it works</a> &nbsp;&middot;&nbsp;
+      <a href="demo.html">demo</a> &nbsp;&middot;&nbsp;
+      <a href="docs.html">docs</a> &nbsp;&middot;&nbsp;
+      <a href="https://github.com/Uthmannabeel/warrant">source</a>
+    </span>
+  </div>
+</footer>
+
+<script>
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting){e.target.classList.add('vis');io.unobserve(e.target)}}),{threshold:.12});
+document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
