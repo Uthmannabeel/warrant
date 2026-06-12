@@ -15,7 +15,7 @@ when a production prediction is violated, and is **invalidated** when the agent'
 > Built for the **Splunk Agentic Ops Hackathon** — theme: *reimagine the future of agentic
 > operations using Splunk AI.*
 
-**🌐 Live demo (replay of a real run): https://warrant-chi.vercel.app**
+**🌐 Website: https://warrant-chi.vercel.app** · **demo replay: https://warrant-chi.vercel.app/demo.html**
 
 ---
 

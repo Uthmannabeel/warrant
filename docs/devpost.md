@@ -9,7 +9,7 @@ fails or the model changes underneath you.
 Gemini (optional brain) · Python / FastAPI
 
 **Links:**
-- 🌐 Live demo (replay of a real run): https://warrant-chi.vercel.app
+- 🌐 Website: https://warrant-chi.vercel.app · live demo replay: https://warrant-chi.vercel.app/demo.html
 - 💻 Source code: https://github.com/Uthmannabeel/warrant
 - 🎬 Demo video: *(add YouTube/Vimeo link here before submitting)*
 
