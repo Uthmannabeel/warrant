@@ -86,7 +86,13 @@ $env:WARRANT_BRAIN="heuristic"; python -m warrant.demo
 $env:WARRANT_BRAIN="heuristic"; python -m uvicorn warrant.dashboard:app --port 8050
 
 <span class="c"># c) ...or prove the MCP gate: an external agent earns, uses and loses autonomy over MCP</span>
-python -m warrant.mcp_demo</div>
+python -m warrant.mcp_demo
+
+<span class="c"># d) ...or watch a license rot from disuse (trust decay, self-contained)</span>
+python -m warrant.decay_demo</div>
+        <p style="margin-top:14px">With the dashboard running, the registry issues a printable
+        <b>license certificate</b> per action class at <span class="mono">/certificates</span>,
+        and a live SVG badge at <span class="mono">/badge/&lt;action&gt;.svg</span>.</p>
       </div>
     </div>
 
@@ -135,6 +141,9 @@ python -m warrant.mcp_demo</div>
         <tr><td class="cond">WARRANT_MONITORING_MARGIN</td>
             <td class="serif">Wilson margin below which a license is ALLOW_WITH_MONITORING, not full autonomy</td>
             <td>0.10</td></tr>
+        <tr><td class="cond">WARRANT_TRUST_HALFLIFE_DAYS</td>
+            <td class="serif">Evidence half-life for <b>trust decay</b> — a license rots unless renewed with fresh outcomes</td>
+            <td>30</td></tr>
       </tbody>
     </table>
     <p class="prose" style="margin-top:24px">

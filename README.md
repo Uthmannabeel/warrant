@@ -1,5 +1,9 @@
 # Warrant
 
+[![restart_connection_pool](https://warrant-chi.vercel.app/badges/restart_connection_pool.svg)](https://warrant-chi.vercel.app/certificate.html)
+[![rollback_deploy](https://warrant-chi.vercel.app/badges/rollback_deploy.svg)](https://warrant-chi.vercel.app/certificate.html)
+[![clear_cache](https://warrant-chi.vercel.app/badges/clear_cache.svg)](https://warrant-chi.vercel.app/certificate.html)
+
 **A licensing authority for AI agents.**
 
 Evals tell you how smart an agent is. Warrant tells production **how much rope to give it** —
@@ -129,6 +133,11 @@ python -m warrant.mcp_demo
 - ✅ **Graduated autonomy** — thin-margin licenses are ALLOW_WITH_MONITORING, not full autonomy
 - ✅ **Late-regression guard** — optional second verification one horizon later
   (`LoopParams.recheck`) so a fix that fails slowly is graded as a MISS
+- ✅ **Trust decay** — evidence is time-weighted (configurable half-life); a license **rots**
+  unless renewed by fresh outcomes (`python -m warrant.decay_demo`)
+- ✅ **Issued certificates + badges** — the dashboard serves a printable license certificate
+  per action class (`/certificate/<action>`, bound to the ledger hash) and live SVG badges
+  (`/badge/<action>.svg`) you can embed in any README — see the badges at the top of this one
 - ◻️ AI Assistant `saia_*` hosted-model tools are integrated but require backend activation on
   the Splunk tenant; the CONTEXT step falls back to a direct MCP query over `_internal`.
 
@@ -146,6 +155,7 @@ Warrant is honest about what a demo can and cannot prove — these are the known
 | The local JSON ledger is hash-chained but file-writable | Tamper-*evident*, not tamper-*proof*. The SPL ledger (`splunk/trust_ledger.spl`) is the production answer: the registry lives in Splunk. |
 | Self-reported MCP outcomes can lie | Mitigated: measured mode (`metric_url`) lets Warrant grade outcomes itself, and every record is labelled `measured` vs `self-reported` for audit. |
 | Thresholds (0.5 Wilson, 4 samples) are demo-scaled | Real certification wants hundreds of graded outcomes; all knobs are env-configurable. |
+| Trust decay half-life is a chosen constant | A real value would be tuned per action class and system volatility; exposed as `WARRANT_TRUST_HALFLIFE_DAYS`. |
 
 ## License
 

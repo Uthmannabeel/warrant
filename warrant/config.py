@@ -38,6 +38,12 @@ class Config:
     # Graduated autonomy: a license whose Wilson bound clears the threshold by LESS than this
     # margin is ALLOW-with-monitoring (act, but page a human) rather than full autonomy.
     monitoring_margin: float = float(os.getenv("WARRANT_MONITORING_MARGIN", "0.10"))
+    # Trust decay: evidence is time-weighted with this half-life (days). A graded outcome's
+    # weight halves every `trust_halflife_days`, so a license ROTS unless renewed by fresh
+    # evidence — yesterday's track record can't justify autonomy a year later. Decay only
+    # applies when a reference "now" is supplied to certify(); the reproducible demo/tests pass
+    # none, so they are unaffected.
+    trust_halflife_days: float = float(os.getenv("WARRANT_TRUST_HALFLIFE_DAYS", "30"))
     # Where the trust ledger lives. Override to isolate a demo (e.g. the MCP-gating walkthrough).
     ledger_path: str = os.getenv("WARRANT_LEDGER_PATH", "ledger.json")
     # Optional Gemini diagnosis brain. Warrant still gates, predicts, verifies, and ledgers

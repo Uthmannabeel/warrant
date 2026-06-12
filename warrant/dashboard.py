@@ -23,15 +23,49 @@ import time
 from datetime import datetime, timezone
 
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, Response, StreamingResponse
 
 from . import brain
-from .certification import certify_all
+from .certification import certify, certify_all, License
 from .ledger import Ledger
 from .loop import LoopParams, Scenario, run_once
 from .proving_ground import EXAM_PARAMS, generate_suite
 
 app = FastAPI(title="Warrant Dashboard")
+
+# --- license badges + certificates (a licensing authority should ISSUE documents) ----------
+_STATUS_COLOR = {"LICENSED": "#2ea043", "PROVISIONAL": "#b08800", "SUSPENDED": "#d1242f"}
+
+
+def _badge_svg(l: License) -> str:
+    """A shields.io-style SVG badge, rendered live from the ledger — embeddable in any README."""
+    label = "warrant"
+    msg = (f"{l.status} {l.confidence:.2f}" if l.status == "LICENSED"
+           else l.status.lower())
+    color = _STATUS_COLOR.get(l.status, "#6a737d")
+    lw = 7 * len(label) + 16          # rough text widths at 11px
+    mw = 7 * len(msg) + 18
+    w = lw + mw
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="20" role="img" aria-label="{label}: {msg}">
+  <linearGradient id="s" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient>
+  <clipPath id="r"><rect width="{w}" height="20" rx="3" fill="#fff"/></clipPath>
+  <g clip-path="url(#r)">
+    <rect width="{lw}" height="20" fill="#555"/>
+    <rect x="{lw}" width="{mw}" height="20" fill="{color}"/>
+    <rect width="{w}" height="20" fill="url(#s)"/>
+  </g>
+  <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11">
+    <text x="{lw/2}" y="15" fill="#010101" fill-opacity=".3">{label}</text>
+    <text x="{lw/2}" y="14">{label}</text>
+    <text x="{lw + mw/2}" y="15" fill="#010101" fill-opacity=".3">{msg}</text>
+    <text x="{lw + mw/2}" y="14">{msg}</text>
+  </g>
+</svg>'''
+
+
+def _latest_hash(action_class: str) -> str:
+    recs = Ledger().records(action_class)
+    return recs[-1].hash if recs and recs[-1].hash else ""
 
 # Production rounds: real horizon (kept short for a live demo), genuine Splunk context.
 PROD_PARAMS = LoopParams(horizon_seconds=2, baseline_samples=4, baseline_interval=0.05,
@@ -88,6 +122,121 @@ def index() -> HTMLResponse:
 @app.get("/licenses")
 def licenses() -> dict:
     return _licenses_event()
+
+
+@app.get("/badge/{action_class}.svg")
+def badge(action_class: str) -> Response:
+    """Live license badge for an action class — embed it in a README like a CI badge."""
+    lic = certify(Ledger(), action_class, brain.fingerprint())
+    return Response(_badge_svg(lic), media_type="image/svg+xml",
+                    headers={"Cache-Control": "no-cache, max-age=0"})
+
+
+def _certificate_html(l: License, ledger_hash: str) -> str:
+    serial = ("WL-" + ledger_hash[:6].upper()) if ledger_hash else "WL-PROVISIONAL"
+    cond = lambda ok: ('<span style="color:#1c6e46">&#10003; met</span>' if ok
+                       else '<span style="color:#a33327">&#10007; not met</span>')
+    from .config import config as _cfg
+    met_conf = l.confidence >= _cfg.autonomy_threshold
+    met_evid = l.samples >= _cfg.autonomy_min_samples
+    met_calib = (l.brier is not None and l.brier <= _cfg.calibration_max)
+    stamp_color = _STATUS_COLOR.get(l.status, "#6a737d")
+    hit = "—" if l.hit_rate is None else f"{l.hit_rate*100:.0f}%"
+    brier = "—" if l.brier is None else f"{l.brier:.3f}"
+    return f'''<!doctype html><html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>License {serial} — {l.action_class}</title>
+<style>
+  body{{margin:0;background:#e7e1d4;font:15px/1.6 Georgia,'Times New Roman',serif;color:#181510;padding:32px}}
+  .cert{{max-width:720px;margin:0 auto;background:#fbf8f1;border:2px solid #181510;position:relative;
+        padding:38px 46px 34px;box-shadow:8px 9px 0 rgba(24,21,16,.13)}}
+  .cert::before{{content:"";position:absolute;inset:8px;border:1px solid #c4bba6;pointer-events:none}}
+  .top{{text-align:center;border-bottom:2px solid #181510;padding-bottom:16px;margin-bottom:22px}}
+  .top .k{{font:700 11px ui-monospace,Consolas,monospace;letter-spacing:.34em;color:#1c6e46;text-transform:uppercase}}
+  .top h1{{font-size:30px;margin:8px 0 4px;letter-spacing:.02em}}
+  .top .no{{font:11px ui-monospace,Consolas,monospace;color:#8a8270;letter-spacing:.1em}}
+  .grant{{font-size:16px;font-style:italic;text-align:center;color:#4a443a;margin:0 0 24px}}
+  .grant b{{font-style:normal;color:#181510;font-family:ui-monospace,Consolas,monospace}}
+  table{{width:100%;border-collapse:collapse;font:13px ui-monospace,Consolas,monospace;margin-bottom:8px}}
+  td{{padding:9px 4px;border-bottom:1px dotted #c4bba6}} td.k{{color:#8a8270}} td.v{{text-align:right;font-weight:700}}
+  .conds{{margin:18px 0 6px}} .conds .c{{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dotted #c4bba6;font:13px ui-monospace,Consolas,monospace}}
+  .stamp{{position:absolute;right:40px;bottom:84px;transform:rotate(-8deg);border:3px double {stamp_color};
+         color:{stamp_color};font:800 17px ui-monospace,Consolas,monospace;letter-spacing:.16em;
+         padding:7px 16px;text-transform:uppercase;border-radius:4px;opacity:.92}}
+  .foot{{margin-top:26px;border-top:1px solid #c4bba6;padding-top:12px;font:11px ui-monospace,Consolas,monospace;color:#8a8270;word-break:break-all}}
+  .reason{{font-style:italic;color:#4a443a;margin-top:14px;font-size:13.5px}}
+  @media print{{body{{background:#fff;padding:0}} .cert{{box-shadow:none}}}}
+  .back{{display:block;max-width:720px;margin:0 auto 14px;font:12px ui-monospace,Consolas,monospace;color:#4a443a}}
+</style></head><body>
+<a class="back" href="/certificates">&larr; all certificates</a>
+<div class="cert">
+  <div class="top">
+    <div class="k">Warrant &middot; Registry of Autonomous Actions</div>
+    <h1>Certificate of License</h1>
+    <div class="no">No. {serial} &nbsp;·&nbsp; status {l.status}</div>
+  </div>
+  <p class="grant">This certifies that the agent fingerprinted <b>{l.fingerprint or "—"}</b><br/>
+     is licensed for the action class <b>{l.action_class}</b>{" — with enhanced monitoring" if l.monitoring else ""}.</p>
+  <table>
+    <tr><td class="k">Wilson confidence (lower bound)</td><td class="v">{l.confidence:.3f}</td></tr>
+    <tr><td class="k">raw hit-rate</td><td class="v">{hit} over {l.samples} graded outcome(s)</td></tr>
+    <tr><td class="k">calibration (Brier)</td><td class="v">{brier} &middot; {l.calibration}</td></tr>
+    <tr><td class="k">evidence</td><td class="v">{l.exams} exam / {l.production} production</td></tr>
+    <tr><td class="k">probation strikes</td><td class="v">{l.strikes}</td></tr>
+    <tr><td class="k">freshness</td><td class="v">{("%.0fd since last evidence" % l.staleness_days) if l.staleness_days else "current"}</td></tr>
+  </table>
+  <div class="conds">
+    <div class="c"><span>Confidence &ge; threshold</span><span>{cond(met_conf)}</span></div>
+    <div class="c"><span>Minimum evidence</span><span>{cond(met_evid)}</span></div>
+    <div class="c"><span>Calibration within bound</span><span>{cond(met_calib)}</span></div>
+    <div class="c"><span>Brain fingerprint unchanged</span><span>{cond(not l.drifted)}</span></div>
+  </div>
+  <div class="reason">{l.reason}</div>
+  <div class="stamp">{l.status}</div>
+  <div class="foot">Bound to trust-ledger hash: {ledger_hash or "(no production record yet)"}<br/>
+     A license is revoked on a violated prediction, voided on brain drift, and decays without fresh evidence.</div>
+</div>
+</body></html>'''
+
+
+@app.get("/certificate/{action_class}")
+def certificate(action_class: str) -> HTMLResponse:
+    """Render an official, printable license certificate, bound to the trust-ledger hash."""
+    lic = certify(Ledger(), action_class, brain.fingerprint())
+    return HTMLResponse(_certificate_html(lic, _latest_hash(action_class)))
+
+
+@app.get("/certificates")
+def certificates() -> HTMLResponse:
+    """Index of every license the registry currently holds, each linking to its certificate."""
+    fp = brain.fingerprint()
+    rows = ""
+    for l in sorted(certify_all(Ledger(), fp), key=lambda x: x.action_class):
+        color = _STATUS_COLOR.get(l.status, "#6a737d")
+        rows += (f'<a class="row" href="/certificate/{l.action_class}">'
+                 f'<span class="ac">{l.action_class}</span>'
+                 f'<img src="/badge/{l.action_class}.svg" alt="{l.status}"/>'
+                 f'<span class="pill" style="border-color:{color};color:{color}">view certificate &rarr;</span></a>')
+    if not rows:
+        rows = '<p class="sub">No action classes certified yet — run the proving ground first.</p>'
+    return HTMLResponse(f'''<!doctype html><html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/><title>Warrant — License Registry</title>
+<style>
+  body{{margin:0;background:#e7e1d4;font:15px/1.6 Georgia,serif;color:#181510;padding:40px 24px}}
+  .box{{max-width:760px;margin:0 auto}}
+  h1{{font-size:30px;margin:0 0 4px}} .k{{font:700 11px ui-monospace,Consolas,monospace;letter-spacing:.3em;color:#1c6e46;text-transform:uppercase}}
+  .sub{{color:#4a443a}} a.back{{font:12px ui-monospace,Consolas,monospace;color:#4a443a}}
+  .row{{display:flex;align-items:center;gap:14px;justify-content:space-between;background:#fbf8f1;border:1.5px solid #181510;
+       padding:16px 20px;margin-top:14px;text-decoration:none;color:#181510;box-shadow:4px 5px 0 rgba(24,21,16,.12)}}
+  .row .ac{{font:700 15px ui-monospace,Consolas,monospace}} .row img{{height:20px}}
+  .pill{{font:700 12px ui-monospace,Consolas,monospace;border:1.5px solid;padding:4px 12px;border-radius:99px}}
+</style></head><body><div class="box">
+<a class="back" href="/">&larr; dashboard</a>
+<div class="k">Warrant &middot; Registry of Autonomous Actions</div>
+<h1>License Registry</h1>
+<p class="sub">Brain fingerprint in force: <b>{fp}</b>. Each license below is issued live from the trust ledger.</p>
+{rows}
+</div></body></html>''')
 
 
 @app.get("/exams")
@@ -243,6 +392,7 @@ HTML = r"""<!doctype html>
     <button id="b-prod" class="ghost" disabled>② Production</button>
     <button id="b-drift" class="warn" disabled>③ Model updated overnight</button>
     <button id="b-recert" class="ghost" disabled>④ Re-certify</button>
+    <a href="/certificates" target="_blank" style="text-decoration:none"><button class="ghost" type="button">📜 Certificates</button></a>
   </div>
 </header>
 

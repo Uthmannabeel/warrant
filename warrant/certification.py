@@ -25,9 +25,47 @@ This module is pure (no clock, no I/O): it reads a Ledger and computes Licenses.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 from .config import config
 from .ledger import Ledger, Outcome, wilson_lower_bound
+
+
+def _parse_iso(ts: str) -> datetime | None:
+    """Parse an ISO-8601 stamp into a tz-aware datetime; None if it isn't a real timestamp.
+
+    Exam outcomes carry a non-date marker (e.g. "exam") — those are timeless cold-start
+    evidence and never decay, so we return None for them.
+    """
+    try:
+        dt = datetime.fromisoformat(ts)
+    except (ValueError, TypeError):
+        return None
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+
+def _decayed_counts(records: list[Outcome], now_iso: str) -> tuple[float, float, float]:
+    """Time-weight the track record: each outcome's weight halves every `trust_halflife_days`,
+    so stale evidence counts for less. Returns (weighted_successes, weighted_n, staleness_days)
+    where staleness is the age of the most recent *timestamped* outcome (0 if none).
+
+    Records without a real timestamp (exams) keep full weight — they are the timeless baseline.
+    """
+    now = _parse_iso(now_iso) or datetime.now(timezone.utc)
+    half = max(0.5, config.trust_halflife_days)
+    w_succ = w_n = 0.0
+    staleness = None
+    for r in records:
+        ts = _parse_iso(r.timestamp)
+        if ts is None:
+            weight = 1.0
+        else:
+            age_days = max(0.0, (now - ts).total_seconds() / 86400.0)
+            weight = 0.5 ** (age_days / half)
+            staleness = age_days if staleness is None else min(staleness, age_days)
+        w_n += weight
+        w_succ += weight if r.correct else 0.0
+    return w_succ, w_n, (staleness or 0.0)
 
 # License lifecycle states.
 PROVISIONAL = "PROVISIONAL"  # in training, or re-certifying after drift — must have a human in the loop
@@ -88,6 +126,8 @@ class License:
     reason: str                 # why the agent holds this status, in one line
     monitoring: bool = False    # LICENSED but margin over threshold is thin -> act WITH monitoring
     strikes: int = 0            # production failures under the current brain -> probation
+    decayed: bool = False       # confidence reflects time-decayed (aged) evidence
+    staleness_days: float = 0.0 # age of the most recent graded outcome -> "freshness" of the licence
 
     @property
     def autonomous(self) -> bool:
@@ -108,13 +148,26 @@ def _ever_licensed(records: list[Outcome]) -> bool:
     return False
 
 
-def certify(ledger: Ledger, action_class: str, current_fingerprint: str | None = None) -> License:
-    """Compute the current license for one action class."""
+def certify(ledger: Ledger, action_class: str, current_fingerprint: str | None = None,
+            now_iso: str | None = None) -> License:
+    """Compute the current license for one action class.
+
+    If `now_iso` is supplied, confidence is computed over **time-decayed** evidence (a license
+    rots unless renewed by fresh outcomes). When it is None — the reproducible demo and the unit
+    tests — evidence is un-weighted and the result is identical to the un-decayed computation.
+    """
     records = ledger.records(action_class)
     n = len(records)
     successes = sum(1 for r in records if r.correct)
-    conf = wilson_lower_bound(successes, n)
     rate = None if n == 0 else successes / n
+    decayed = False
+    staleness_days = 0.0
+    if now_iso and records:
+        w_succ, w_n, staleness_days = _decayed_counts(records, now_iso)
+        conf = wilson_lower_bound(w_succ, w_n)
+        decayed = True
+    else:
+        conf = wilson_lower_bound(successes, n)
     brier = brier_score(records)
     exams = sum(1 for r in records if r.kind == "exam")
     production = n - exams
@@ -172,14 +225,23 @@ def certify(ledger: Ledger, action_class: str, current_fingerprint: str | None =
         else:
             reason = f"calibration {calibration_grade(brier)} (Brier {brier:.2f}) too weak - still in training"
 
+    # Trust decay: when confidence has been eroded by stale evidence, say so plainly — a license
+    # that lapsed because nobody renewed it reads differently from one revoked by a failure.
+    if decayed and not drifted and staleness_days >= 1.0 and status != LICENSED and not meets_conf:
+        reason = (f"evidence has aged (most recent outcome {staleness_days:.0f}d old, "
+                  f"half-life {config.trust_halflife_days:.0f}d) - confidence decayed to {conf:.2f}; "
+                  "renew with fresh outcomes to re-license")
+
     return License(
         action_class=action_class, status=status, confidence=conf, hit_rate=rate,
         samples=n, exams=exams, production=production, brier=brier,
         calibration=calibration_grade(brier), fingerprint=earned_fp or (current_fingerprint or ""),
         drifted=drifted, reason=reason,
         monitoring=(status == LICENSED and monitoring), strikes=strikes,
+        decayed=decayed, staleness_days=round(staleness_days, 1),
     )
 
 
-def certify_all(ledger: Ledger, current_fingerprint: str | None = None) -> list[License]:
-    return [certify(ledger, ac, current_fingerprint) for ac in ledger.action_classes()]
+def certify_all(ledger: Ledger, current_fingerprint: str | None = None,
+                now_iso: str | None = None) -> list[License]:
+    return [certify(ledger, ac, current_fingerprint, now_iso) for ac in ledger.action_classes()]

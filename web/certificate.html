@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>License Certificate — Warrant</title>
+<meta name="description" content="Warrant issues an official, printable certificate for every license an agent earns — bound to the tamper-evident trust-ledger hash."/>
+<meta property="og:title" content="Warrant — a license your agent can actually hold"/>
+<meta property="og:description" content="Every earned license is issued as an official certificate, bound to the trust-ledger hash. Revocable, fingerprinted, decaying."/>
+<meta property="og:url" content="https://warrant-chi.vercel.app/certificate.html"/>
+<meta property="og:type" content="website"/>
+<meta name="theme-color" content="#f6f2e9" media="(prefers-color-scheme: light)"/>
+<meta name="theme-color" content="#14120d" media="(prefers-color-scheme: dark)"/>
+<script>(function(){try{var t=localStorage.getItem('warrant-theme');if(t!=='light'&&t!=='dark')t=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();function toggleTheme(){var el=document.documentElement,t=el.getAttribute('data-theme')==='dark'?'light':'dark';el.setAttribute('data-theme',t);try{localStorage.setItem('warrant-theme',t);}catch(e){}}</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23f6f2e9'/%3E%3Crect x='7' y='7' width='50' height='50' fill='none' stroke='%231c6e46' stroke-width='5'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-size='36' font-weight='bold' text-anchor='middle' fill='%231c6e46'%3EW%3C/text%3E%3C/svg%3E"/>
+<link rel="stylesheet" href="styles.css"/>
+<style>
+  .sheet{max-width:680px;margin:0 auto;background:var(--card);border:2px solid var(--ink);position:relative;
+         padding:40px 48px 34px;box-shadow:8px 9px 0 var(--shadow-card)}
+  .sheet::before{content:"";position:absolute;inset:8px;border:1px solid var(--rule2);pointer-events:none}
+  .sheet .top{text-align:center;border-bottom:2px solid var(--ink);padding-bottom:16px;margin-bottom:22px}
+  .sheet .k{font-family:var(--mono);font-size:11px;letter-spacing:.32em;color:var(--green);text-transform:uppercase;font-weight:700}
+  .sheet h2{font-size:30px;margin:8px 0 4px}
+  .sheet .no{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.1em}
+  .sheet .grant{font-style:italic;text-align:center;color:var(--ink2);margin:0 0 24px;font-size:16px}
+  .sheet .grant b{font-style:normal;color:var(--ink);font-family:var(--mono)}
+  .sheet table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px}
+  .sheet td{padding:9px 4px;border-bottom:1px dotted var(--rule2)}
+  .sheet td.k2{color:var(--faint)} .sheet td.v{text-align:right;font-weight:700}
+  .sheet .conds .c{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dotted var(--rule2);
+                   font-family:var(--mono);font-size:13px;margin:0}
+  .sheet .yes{color:var(--green)}
+  .sheet .stamp2{position:absolute;right:42px;bottom:92px;transform:rotate(-8deg);border:3px double var(--green);
+                 color:var(--green);font-family:var(--mono);font-weight:800;font-size:17px;letter-spacing:.16em;
+                 padding:7px 16px;text-transform:uppercase;border-radius:4px;opacity:.92;mix-blend-mode:var(--stamp-blend)}
+  .sheet .foot2{margin-top:26px;border-top:1px solid var(--rule2);padding-top:12px;font-family:var(--mono);
+                font-size:11px;color:var(--faint);word-break:break-all}
+  .badges{display:flex;gap:12px;justify-content:center;margin-top:30px;flex-wrap:wrap}
+  .badges img{height:20px}
+</style>
+</head>
+<body>
+
+<div class="formbar">
+  <div class="doc">
+    <div class="id"><a href="index.html"><b>WARRANT</b></a> · Licensing authority for AI agents</div>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="why.html">Why Warrant</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="demo.html">Demo</a>
+      <a href="docs.html">Docs</a>
+      <a href="https://github.com/Uthmannabeel/warrant">GitHub</a>
+      <button class="themetoggle" type="button" onclick="toggleTheme()" aria-label="Toggle light or dark theme"><span class="lbl-d"><span class="ico">&#9790;</span> Dark</span><span class="lbl-l"><span class="ico">&#9788;</span> Light</span></button>
+    </nav>
+  </div>
+</div>
+
+<div class="pagehero">
+  <div class="doc">
+    <p class="kicker">The artifact</p>
+    <h1>A license your agent can actually <em>hold</em>.</h1>
+    <p class="lede">
+      Most "AI governance" is a dashboard number. Warrant issues a <b>document</b> — an official,
+      printable certificate for every license an agent earns, bound to the tamper-evident
+      trust-ledger hash. Revocable on a failure, voided on drift, and it <b>decays</b> without
+      fresh evidence. Below is a representative certificate; the live product serves the real one
+      at <span class="mono">/certificate/&lt;action&gt;</span>.
+    </p>
+  </div>
+</div>
+
+<section>
+  <div class="doc rv">
+    <div class="sheet">
+      <div class="top">
+        <div class="k">Warrant &middot; Registry of Autonomous Actions</div>
+        <h2>Certificate of License</h2>
+        <div class="no">No. WL-1EC6B9 &nbsp;·&nbsp; status LICENSED</div>
+      </div>
+      <p class="grant">This certifies that the agent fingerprinted
+        <b>gemini-2.5-flash:v3</b><br/>is licensed for the action class
+        <b>restart_connection_pool</b>.</p>
+      <table>
+        <tr><td class="k2">Wilson confidence (lower bound)</td><td class="v">0.610</td></tr>
+        <tr><td class="k2">raw hit-rate</td><td class="v">100% over 6 graded outcomes</td></tr>
+        <tr><td class="k2">calibration (Brier)</td><td class="v">0.040 &middot; excellent</td></tr>
+        <tr><td class="k2">evidence</td><td class="v">5 exam / 1 production</td></tr>
+        <tr><td class="k2">probation strikes</td><td class="v">0</td></tr>
+        <tr><td class="k2">freshness</td><td class="v">current</td></tr>
+      </table>
+      <div class="conds">
+        <div class="c"><span>Confidence &ge; threshold</span><span class="yes">&#10003; met</span></div>
+        <div class="c"><span>Minimum evidence</span><span class="yes">&#10003; met</span></div>
+        <div class="c"><span>Calibration within bound</span><span class="yes">&#10003; met</span></div>
+        <div class="c"><span>Brain fingerprint unchanged</span><span class="yes">&#10003; met</span></div>
+      </div>
+      <div class="stamp2">Licensed</div>
+      <div class="foot2">Bound to trust-ledger hash: 1ec6b9ee9bae5aba0101d40d0efc09d947a0b7d0&hellip;<br/>
+        A license is revoked on a violated prediction, voided on brain drift, and decays without fresh evidence.</div>
+    </div>
+
+    <div class="badges">
+      <img src="badges/restart_connection_pool.svg" alt="restart_connection_pool LICENSED"/>
+      <img src="badges/rollback_deploy.svg" alt="rollback_deploy LICENSED"/>
+      <img src="badges/clear_cache.svg" alt="clear_cache LICENSED"/>
+      <img src="badges/suspended-example.svg" alt="example SUSPENDED"/>
+    </div>
+    <p class="prose" style="text-align:center;margin:22px auto 0">
+      Embeddable license <b>badges</b> — like a CI badge, but for autonomy. Any agent repo can
+      show its current Warrant status at a glance.
+    </p>
+
+    <div class="ctas" style="justify-content:center;margin-top:34px">
+      <a class="btn" href="demo.html">&#9654;&nbsp; Watch a license get earned</a>
+      <a class="btn ghost" href="how-it-works.html#license">How a license is computed &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="doc">
+    <span>WARRANT &middot; MIT License &middot; 2026</span>
+    <span>
+      <a href="index.html">home</a> &nbsp;&middot;&nbsp;
+      <a href="why.html">why</a> &nbsp;&middot;&nbsp;
+      <a href="how-it-works.html">how it works</a> &nbsp;&middot;&nbsp;
+      <a href="demo.html">demo</a> &nbsp;&middot;&nbsp;
+      <a href="docs.html">docs</a>
+    </span>
+  </div>
+</footer>
+
+<script>
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting){e.target.classList.add('vis');io.unobserve(e.target)}}),{threshold:.12});
+document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
