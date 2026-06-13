@@ -181,6 +181,59 @@ python -m warrant.decay_demo</div>
   </div>
 </section>
 
+<!-- production wiring -->
+<section id="production">
+  <div class="doc rv">
+    <div class="clausehead"><span class="num">&sect;4 &middot; USING WARRANT IN A REAL ENVIRONMENT</span>
+      <h2>The engine is done. Adoption is wiring, not rebuilding.</h2></div>
+    <p class="prose">
+      Everything above runs against a <b>sandbox</b> that stands in for production. The governance
+      engine &mdash; proving ground, licensing, drift, decay, the tamper-evident ledger &mdash; and
+      its <b>MCP interface are real and reusable as-is</b>. Putting Warrant in front of a real
+      company&rsquo;s agents means connecting <b>two</b> points to that company&rsquo;s stack. No
+      part of the trust logic changes.
+    </p>
+    <div class="step">
+      <div class="n">1</div>
+      <div class="body">
+        <h3>Your agent calls the gate &mdash; it already speaks MCP</h3>
+        <p>Any tool-using agent (a SOAR playbook, a Splunk Triage agent, a Claude agent) asks
+        permission before acting and reports the outcome after. Nothing about the agent is
+        rewritten; it gains four tool calls against Warrant&rsquo;s MCP server.</p>
+        <div class="plate"><span class="c"># before acting:</span>
+warrant_request_action(action_class=<span class="y">"restart_service"</span>, agent_fingerprint=<span class="y">"&lt;your model:prompt id&gt;"</span>)
+<span class="c"># -> ALLOW · ALLOW_WITH_MONITORING · REQUIRE_APPROVAL</span></div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="n">2</div>
+      <div class="body">
+        <h3>Point verification at your real metrics</h3>
+        <p>Today Warrant grades an outcome by reading the sandbox&rsquo;s <span class="mono">/metrics</span>.
+        In production you pass your own metrics endpoint &mdash; your Splunk, Datadog, Prometheus &mdash;
+        and the committed forecast band; Warrant fetches it <b>itself</b> and grades the result, so
+        the agent can&rsquo;t self-certify.</p>
+        <div class="plate"><span class="c"># after acting — trust-but-verify against YOUR telemetry:</span>
+warrant_report_outcome(action_class=<span class="y">"restart_service"</span>,
+                       metric_url=<span class="y">"https://your-splunk/.../error_rate"</span>, upper_limit=<span class="b">0.01</span>)</div>
+      </div>
+    </div>
+    <p class="prose" style="margin-top:6px">
+      Action <i>execution</i> stays where it already lives &mdash; your runbooks, SOAR, or deploy
+      tooling. Warrant governs <b>whether</b> the agent may act; it doesn&rsquo;t replace how the
+      action runs.
+    </p>
+    <h3 class="sub">Honest about the gap to production</h3>
+    <p class="prose">
+      This is a working proof-of-concept, not a shippable product. Before a real SRE team ran it
+      unattended you&rsquo;d add <b>authentication on the MCP server</b> (so only your agents can
+      ask), a <b>shared, durable ledger</b> in place of the local file (the SPL version points the
+      way), and the usual hosting/operational hardening. Those are on the roadmap &mdash; the part
+      that&rsquo;s novel and done is the <b>trust engine and its interface</b>.
+    </p>
+  </div>
+</section>
+
 <section class="closing">
   <div class="doc rv">
     <h2>Read the code. Run the loop.<br/>Try to fool it.</h2>
