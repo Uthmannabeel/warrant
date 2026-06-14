@@ -14,6 +14,11 @@ website. **Version B** records the live dashboard for a "it's really running" fe
 - Record at **1080p**, browser **full-screen** (press **F11** in the browser).
 - Speak the narration below as you go — or record the clicks first and add voiceover after.
 - Keep the browser in **light mode** (the document look reads as more serious on camera).
+- **The demo replay auto-plays (~60 seconds) the moment you open the Demo page.** Narrate the
+  four acts as the on-screen **ACT** banners appear. If your narration runs longer than the
+  replay, just finish over the final registry (all LICENSED) — or press **▶ Replay** to restart it.
+- **Load the home page fresh (Ctrl+R) right before recording** so the two certificate stamps
+  animate in on screen during the opening line.
 
 ---
 
@@ -36,7 +41,8 @@ you say, the *italics* are what you do on screen.
 > an agent *earn* it — a revocable license per action, backed by evidence, not vibes."**
 
 ### 0:35–0:42 · Open the demo
-*Click "Demo" in the nav. The replay starts auto-playing.*
+*Click "Demo" in the nav. The replay auto-plays (~60s) — narrate the four acts as the on-screen
+ACT banners appear; the registry on the right updates live.*
 
 > **"Here's a real run, in four acts."**
 

@@ -197,7 +197,7 @@ function drawChart(){
 }
 function chip(act){document.querySelectorAll('.act-chip').forEach(c=>c.classList.toggle('on',c.dataset.act===act));}
 
-const delays={act:850,phase:300,round:650,log:140,exam:120,metric:600,licenses:0};
+const delays={act:3200,phase:1000,round:2400,log:1000,exam:420,metric:2200,licenses:0};
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 function applyEvent(d){
