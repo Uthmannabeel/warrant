@@ -194,12 +194,12 @@ front of a real company's agents is *wiring*, not rebuilding. Two connection poi
 
 1. **Your agent calls the gate** — any MCP-speaking agent gains four tool calls; nothing is rewritten.
    ```
-   warrant_request_action(action_class="restart_service", agent_fingerprint="<model:prompt id>")
+   warrant_request_action(action_class="restart_connection_pool", agent_fingerprint="<model:prompt id>")
    # → ALLOW · ALLOW_WITH_MONITORING · REQUIRE_APPROVAL
    ```
 2. **Point verification at your real metrics** — pass your own endpoint and the committed band; Warrant fetches and grades it *itself*, so the agent can't self-certify.
    ```
-   warrant_report_outcome(action_class="restart_service",
+   warrant_report_outcome(action_class="restart_connection_pool",
                           metric_url="https://your-splunk/.../error_rate", upper_limit=0.01)
    ```
 

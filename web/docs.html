@@ -202,7 +202,7 @@ python -m warrant.decay_demo</div>
         permission before acting and reports the outcome after. Nothing about the agent is
         rewritten; it gains four tool calls against Warrant&rsquo;s MCP server.</p>
         <div class="plate"><span class="c"># before acting:</span>
-warrant_request_action(action_class=<span class="y">"restart_service"</span>, agent_fingerprint=<span class="y">"&lt;your model:prompt id&gt;"</span>)
+warrant_request_action(action_class=<span class="y">"restart_connection_pool"</span>, agent_fingerprint=<span class="y">"&lt;your model:prompt id&gt;"</span>)
 <span class="c"># -> ALLOW · ALLOW_WITH_MONITORING · REQUIRE_APPROVAL</span></div>
       </div>
     </div>
@@ -215,7 +215,7 @@ warrant_request_action(action_class=<span class="y">"restart_service"</span>, ag
         and the committed forecast band; Warrant fetches it <b>itself</b> and grades the result, so
         the agent can&rsquo;t self-certify.</p>
         <div class="plate"><span class="c"># after acting — trust-but-verify against YOUR telemetry:</span>
-warrant_report_outcome(action_class=<span class="y">"restart_service"</span>,
+warrant_report_outcome(action_class=<span class="y">"restart_connection_pool"</span>,
                        metric_url=<span class="y">"https://your-splunk/.../error_rate"</span>, upper_limit=<span class="b">0.01</span>)</div>
       </div>
     </div>
