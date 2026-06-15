@@ -15,7 +15,11 @@
 
 *Evals tell you how smart an agent is. Warrant tells production **how much rope to give it** — and takes the rope back the moment a prediction fails or the model changes underneath you.*
 
-[**🌐 Website**](https://warrant-chi.vercel.app) · [**▶ Live demo**](https://warrant-chi.vercel.app/demo.html) · [**📜 Certificate**](https://warrant-chi.vercel.app/certificate.html) · [**📖 Docs**](https://warrant-chi.vercel.app/docs.html)
+[**🎬 Watch the 3-min demo**](https://youtu.be/P_OnRGlrKy8) · [**🌐 Website**](https://warrant-chi.vercel.app) · [**▶ Live replay**](https://warrant-chi.vercel.app/demo.html) · [**📜 Certificate**](https://warrant-chi.vercel.app/certificate.html) · [**📖 Docs**](https://warrant-chi.vercel.app/docs.html)
+
+[![Watch the Warrant demo](https://img.youtube.com/vi/P_OnRGlrKy8/hqdefault.jpg)](https://youtu.be/P_OnRGlrKy8)
+
+<sub>▶ 3-minute demo on YouTube — or explore the <a href="https://warrant-chi.vercel.app">live site</a>.</sub>
 
 <img src="web/screenshots/hero.png" alt="Warrant — don't trust your agent, license it" width="100%">
 

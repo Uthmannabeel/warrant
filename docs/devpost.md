@@ -11,7 +11,7 @@ Gemini (optional brain) · Python / FastAPI
 **Links:**
 - 🌐 Website: https://warrant-chi.vercel.app · live demo replay: https://warrant-chi.vercel.app/demo.html
 - 💻 Source code: https://github.com/Uthmannabeel/warrant
-- 🎬 Demo video: *(add YouTube/Vimeo link here before submitting)*
+- 🎬 Demo video: https://youtu.be/P_OnRGlrKy8
 
 ---
 
