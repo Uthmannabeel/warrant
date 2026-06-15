@@ -84,7 +84,8 @@ ACT banners appear; the registry on the right updates live.*
 > license."**
 
 ### 2:35–3:00 · Close
-*Scroll to the closing line, or back to the hero.*
+*Click **Home** (or the WARRANT logo) and scroll to the bottom closing line **"Autonomy is earned.
+In writing."** — or simply end on the hero **"Don't trust your agent. License it."***
 
 > **"Falsifiable predictions. Earned, revocable, decaying licenses. Drift detection. Calibration.
 > A trust gate any agent can call over MCP. Evals tell you how smart an agent is — Warrant tells
